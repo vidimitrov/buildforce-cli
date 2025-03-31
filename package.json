@@ -9,7 +9,8 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "build": "tsc && cp -r src/templates dist/",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ts-node src/tests/initialization-check.test.ts",
+    "test:uninitialized": "mkdir -p /tmp/buildforce-test && NODE_PATH=. ts-node -r tsconfig-paths/register src/tests/initialization-check.test.ts -- --dir=/tmp/buildforce-test"
   },
   "author": "Veselin Dimitrov",
   "license": "MIT",
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@types/node": "^22.13.14",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.2"
   }
 }

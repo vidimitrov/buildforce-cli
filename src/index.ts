@@ -7,6 +7,7 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import * as fs from "fs";
 import * as path from "path";
+import * as readline from "readline";
 
 const model = new ChatOpenAI();
 
@@ -93,10 +94,91 @@ program
     }
   });
 
+/**
+ * Checks if the .buildforce folder exists in the specified directory
+ * @param dir Directory to check, defaults to current working directory
+ * @returns boolean indicating if the project is initialized
+ */
+const isBuildforceInitialized = (dir: string = process.cwd()): boolean => {
+  const buildforceDir = path.join(dir, ".buildforce");
+  return fs.existsSync(buildforceDir);
+};
+
+/**
+ * Prompts the user to initialize the project
+ * @returns Promise<boolean> indicating if initialization was successful
+ */
+const promptForInitialization = async (): Promise<boolean> => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  // Get current directory name as default project name
+  const defaultProjectName = path.basename(process.cwd());
+
+  try {
+    // Ask if user wants to initialize
+    const shouldInitialize = await new Promise<boolean>((resolve) => {
+      rl.question(
+        `No .buildforce folder found. Would you like to initialize the project first? (y/n): `,
+        (answer: string) =>
+          resolve(
+            answer.toLowerCase() === "y" || answer.toLowerCase() === "yes"
+          )
+      );
+    });
+
+    if (!shouldInitialize) {
+      console.log(
+        'Initialization skipped. You can run "buildforce init <projectName>" later.'
+      );
+      rl.close();
+      return false;
+    }
+
+    // Ask for project name with default
+    const projectName = await new Promise<string>((resolve) => {
+      rl.question(
+        `Project name (default: ${defaultProjectName}): `,
+        (answer: string) => resolve(answer.trim() || defaultProjectName)
+      );
+    });
+
+    // Close readline interface
+    rl.close();
+
+    // Initialize the project
+    console.log(`Initializing project "${projectName}"...`);
+    await copyBuildforceTemplate(process.cwd());
+
+    return true;
+  } catch (error) {
+    console.error("Error during initialization:", error);
+    rl.close();
+    return false;
+  }
+};
+
 program
   .command("plan")
   .description("Start planning a new coding session")
   .action(async () => {
+    // Check if .buildforce folder exists
+    if (!isBuildforceInitialized()) {
+      console.log("Buildforce not initialized for this project.");
+      const initialized = await promptForInitialization();
+
+      if (!initialized) {
+        // User chose not to initialize, exit the command
+        return;
+      }
+
+      // Successfully initialized, continue with planning
+      console.log("Initialization complete. Starting planning session...");
+    }
+
+    // Existing plan command functionality
     let conversationActive = true;
     let question = "What would you like to work on?";
 
@@ -104,19 +186,16 @@ program
       const answer = await askModel(question);
       console.log(`\nBuildforce: ${answer}\n`);
 
-      const readline = require("readline").createInterface({
+      const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
       });
 
       const userInput = await new Promise<string>((resolve) => {
-        readline.question(
-          "Your response (type EXIT or STOP to end): ",
-          resolve
-        );
+        rl.question("Your response (type EXIT or STOP to end): ", resolve);
       });
 
-      readline.close();
+      rl.close();
 
       if (
         userInput.toUpperCase() === "EXIT" ||

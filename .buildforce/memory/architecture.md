@@ -45,7 +45,14 @@ buildforce-cli/
 2. Building for distribution using `npm run build`
 3. CLI is made available through the bin configuration in package.json
 
+## Command Structure
+
+- **init**: Initialize a new project with the Buildforce template
+- **plan**: Start planning a new coding session
+  - Includes initialization check and prompt for uninitialized projects
+  - Seamless continuation to planning after initialization
+
 ## Notes
 
-- Test infrastructure needs to be implemented
+- Basic test infrastructure implemented for initialization checks
 - Binary is exposed as "buildforce" command when installed

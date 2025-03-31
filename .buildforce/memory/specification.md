@@ -43,6 +43,10 @@ The Buildforce CLI aims to provide a command-line interface for accessing and ut
 - Intuitive command structure
 - Clear error messages and feedback
 - Comprehensive help documentation
+- Seamless project initialization flow
+  - Automatic detection of uninitialized projects
+  - User-friendly prompts with sensible defaults
+  - Smooth transition from initialization to planning
 
 ## Future Enhancements
 
