@@ -1,0 +1,40 @@
+# Session N: <SESSION-NAME>
+
+## Objective
+
+<OBJECTIVE-DESCRIPTION>
+
+## Decisions
+
+TLDR: <SUMMARY-OF-DECISIONS>
+
+- <DECISION-1-NAME>
+- <DECISION-2-NAME>
+- <DECISION-N-NAME>
+
+## Tasks
+
+- [ ] 1. <TASK-1-NAME>
+- [ ] 2. <TASK-2-NAME>
+- [ ] N. <TASK-N-NAME>
+
+## Expected Outcome
+
+- <EXPECTED-OUTCOME-1>
+- <EXPECTED-OUTCOME-2>
+- <EXPECTED-OUTCOME-N>
+
+## Verification / Testing Steps
+
+1. <FEATURE-1-NAME>:
+
+   - <STEP-1-TESTING-DETAILS>
+   - <STEP-2-TESTING-DETAILS>
+   - <STEP-N-TESTING-DETAILS>
+
+2. <FIX-2-NAME>:
+   - <STEP-2-TESTING-DETAILS>
+
+N. <FEATURE/FIX-N-NAME>:
+
+- <FEATURE/FIX-N-TESTING-DETAILS>
