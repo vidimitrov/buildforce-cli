@@ -1,0 +1,27 @@
+{
+  "name": "buildforce-cli",
+  "version": "0.0.0",
+  "description": "A CLI tool for using the Buildforce planning capabilities",
+  "main": "dist/index.js",
+  "bin": {
+    "buildforce": "./dist/index.js"
+  },
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc && cp -r src/templates dist/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Veselin Dimitrov",
+  "license": "MIT",
+  "dependencies": {
+    "@langchain/core": "^0.3.43",
+    "@langchain/openai": "^0.5.0",
+    "commander": "^13.1.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}
