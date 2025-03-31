@@ -2,11 +2,11 @@
 
 ## Overview
 
-Enhance the `buildforce plan` command to check if the `.buildforce` folder exists in the current directory and prompt the user to initialize it if it doesn't.
+Enhance the `buildforce plan` command to check if the `buildforce` folder exists in the current directory and prompt the user to initialize it if it doesn't.
 
 ## Sub-Tasks
 
-- [x] Create a utility function `isBuildforceInitialized()` to check for the `.buildforce` folder
+- [x] Create a utility function `isBuildforceInitialized()` to check for the `buildforce` folder
 - [x] Implement `promptForInitialization()` to handle user interaction for initialization
 - [x] Modify the `plan` command to use these functions
 - [x] Test the flow with both initialized and uninitialized projects
@@ -18,11 +18,11 @@ Enhance the `buildforce plan` command to check if the `.buildforce` folder exist
 
 ```typescript
 /**
- * Checks if the .buildforce folder exists in the current directory
+ * Checks if the buildforce folder exists in the current directory
  * @returns boolean indicating if the project is initialized
  */
 const isBuildforceInitialized = (): boolean => {
-  const buildforceDir = path.join(process.cwd(), ".buildforce");
+  const buildforceDir = path.join(process.cwd(), "buildforce");
   return fs.existsSync(buildforceDir);
 };
 
@@ -43,7 +43,7 @@ const promptForInitialization = async (): Promise<boolean> => {
     // Ask if user wants to initialize
     const shouldInitialize = await new Promise<boolean>((resolve) => {
       readline.question(
-        `No .buildforce folder found. Would you like to initialize the project first? (y/n): `,
+        `No buildforce folder found. Would you like to initialize the project first? (y/n): `,
         (answer: string) =>
           resolve(
             answer.toLowerCase() === "y" || answer.toLowerCase() === "yes"
@@ -89,7 +89,7 @@ program
   .command("plan")
   .description("Start planning a new coding session")
   .action(async () => {
-    // Check if .buildforce folder exists
+    // Check if buildforce folder exists
     if (!isBuildforceInitialized()) {
       console.log("Buildforce not initialized for this project.");
       const initialized = await promptForInitialization();
@@ -142,13 +142,13 @@ program
 
 1. Test with an uninitialized project:
 
-   - Run `buildforce plan` in a directory without a `.buildforce` folder
+   - Run `buildforce plan` in a directory without a `buildforce` folder
    - Verify the initialization prompt appears
    - Test both accepting and declining initialization
    - Verify planning continues after successful initialization
 
 2. Test with an initialized project:
-   - Run `buildforce plan` in a directory with a `.buildforce` folder
+   - Run `buildforce plan` in a directory with a `buildforce` folder
    - Verify planning starts immediately without initialization prompts
 
 ## Error Handling
@@ -161,7 +161,7 @@ program
 
 The task has been successfully completed with the following implementations:
 
-1. Created the `isBuildforceInitialized()` utility function that checks for the existence of the `.buildforce` folder in a specified directory (defaulting to the current working directory).
+1. Created the `isBuildforceInitialized()` utility function that checks for the existence of the `buildforce` folder in a specified directory (defaulting to the current working directory).
 
 2. Implemented the `promptForInitialization()` function that:
 

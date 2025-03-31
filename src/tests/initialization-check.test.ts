@@ -20,12 +20,12 @@ const parseArgs = (): { dir?: string } => {
 };
 
 /**
- * Checks if the .buildforce folder exists in the specified directory
+ * Checks if the buildforce folder exists in the specified directory
  * @param dir Directory to check
  * @returns boolean indicating if the project is initialized
  */
 const isBuildforceInitialized = (dir: string): boolean => {
-  const buildforceDir = path.join(dir, ".buildforce");
+  const buildforceDir = path.join(dir, "buildforce");
   return fs.existsSync(buildforceDir);
 };
 
@@ -38,9 +38,7 @@ const testInitializationCheck = (): void => {
 
   console.log("Testing initialization check:");
   console.log(`Test directory: ${testDir}`);
-  console.log(
-    `Buildforce directory path: ${path.join(testDir, ".buildforce")}`
-  );
+  console.log(`Buildforce directory path: ${path.join(testDir, "buildforce")}`);
   console.log(`Is buildforce initialized: ${isBuildforceInitialized(testDir)}`);
 
   // If not initialized, simulate the prompt

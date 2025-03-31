@@ -12,6 +12,7 @@ Buildforce CLI is a command-line interface tool designed to provide access to Bu
   - @langchain/core & @langchain/openai: AI/LLM integration
   - commander: CLI framework
   - dotenv: Environment configuration
+  - inquirer: Interactive command-line prompts
 
 ## Project Structure
 
@@ -20,8 +21,13 @@ buildforce-cli/
 ├── src/                    # Source code directory
 │   ├── index.ts           # Main entry point
 │   └── templates/         # Template files
+│       ├── buildforce/    # Buildforce template files
+│       └── rules/         # AI tools rule templates
+│           ├── .cursor/   # Cursor rule templates
+│           ├── .clinerules # Cline rule template
+│           └── .windsurfrules # Windsurf rule template
 ├── dist/                  # Compiled output
-├── .buildforce/          # Project documentation and rules
+├── buildforce/          # Project documentation and rules
 └── configuration files   # Various config files (package.json, tsconfig.json, etc.)
 ```
 
@@ -48,6 +54,10 @@ buildforce-cli/
 ## Command Structure
 
 - **init**: Initialize a new project with the Buildforce template
+  - Includes AI tools selection (Cursor, Cline, Windsurf)
+  - Sets up appropriate rule files based on selection
+  - Handles existing files by appending content rather than overwriting
+  - Checks for already initialized projects
 - **plan**: Start planning a new coding session
   - Includes initialization check and prompt for uninitialized projects
   - Seamless continuation to planning after initialization
@@ -56,3 +66,4 @@ buildforce-cli/
 
 - Basic test infrastructure implemented for initialization checks
 - Binary is exposed as "buildforce" command when installed
+- AI tools integration allows for seamless setup of rule files for different AI-assisted coding tools

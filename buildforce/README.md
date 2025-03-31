@@ -1,4 +1,4 @@
-# .buildforce
+# buildforce
 
 This directory is specifically designed to be used by Large Language Models (LLMs) to gather project-specific context and maintain awareness of the overall project specification. It serves as a central knowledge base that helps AI agents understand the project's requirements, track progress, and effectively participate in coding sessions.
 
@@ -52,7 +52,7 @@ Contains standardized templates for creating consistent documentation:
 
 ## Purpose
 
-The `.buildforce` directory serves as a living documentation system that:
+The `buildforce` directory serves as a living documentation system that:
 
 1. Provides AI agents with comprehensive project context
 2. Maintains historical knowledge of development decisions
@@ -62,18 +62,18 @@ The `.buildforce` directory serves as a living documentation system that:
 
 ## Onboarding
 
-The `.buildforce` directory is designed to be easily set up for new projects. Follow these steps to initialize the directory structure for your project:
+The `buildforce` directory is designed to be easily set up for new projects. Follow these steps to initialize the directory structure for your project:
 
 1. **Create the basic directory structure**:
 
-   - Create a `.buildforce` folder in your project root
-   - Within `.buildforce`, create `memory/`, `sessions/completed/`, `sessions/planned/`, and `templates/` folders
+   - Create a `buildforce` folder in your project root
+   - Within `buildforce`, create `memory/`, `sessions/completed/`, `sessions/planned/`, and `templates/` folders
    - Create an empty `.active-session` file in the `sessions/` directory
 
 2. **Copy the template files**:
 
    - Copy all template files from a reference project or the buildforce repository
-   - Place them in the `.buildforce/templates/` directory
+   - Place them in the `buildforce/templates/` directory
 
 3. **Generate initial documentation**:
 
@@ -85,7 +85,7 @@ The `.buildforce` directory is designed to be easily set up for new projects. Fo
 
    - Review the auto-generated documentation for accuracy
    - Refine as needed to ensure it correctly represents your project
-   - Commit the `.buildforce` directory to your repository
+   - Commit the `buildforce` directory to your repository
 
 5. **Begin new session**:
    - Create initial session folder (with a descriptive short name and the next iterative number - ex. "session-2-task-management") in `sessions/planned/` and a new `session.md` file in it using the session template

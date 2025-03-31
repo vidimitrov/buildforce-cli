@@ -2,7 +2,7 @@
 
 ## Objective
 
-Improve the user experience of the `buildforce plan` command by adding a check for the existence of the `.buildforce` folder and prompting the user to initialize the project if it doesn't exist.
+Improve the user experience of the `buildforce plan` command by adding a check for the existence of the `buildforce` folder and prompting the user to initialize the project if it doesn't exist.
 
 ## Tasks
 
@@ -12,7 +12,7 @@ Improve the user experience of the `buildforce plan` command by adding a check f
 
 The implementation will:
 
-1. Create utility functions to check if the `.buildforce` folder exists
+1. Create utility functions to check if the `buildforce` folder exists
 2. Implement a prompt for initialization if the folder doesn't exist
 3. Allow the user to specify a project name or use the default (current directory name)
 4. Continue with the planning session after successful initialization
@@ -22,7 +22,7 @@ The implementation will:
 
 The enhanced `plan` command will:
 
-- Check for the existence of the `.buildforce` folder before starting a planning session
+- Check for the existence of the `buildforce` folder before starting a planning session
 - Offer to initialize the project if the folder doesn't exist
 - Use a user-friendly prompt to get the project name with a sensible default
 - Seamlessly continue with planning after initialization
@@ -32,7 +32,7 @@ The enhanced `plan` command will:
 
 This session successfully enhanced the `buildforce plan` command with initialization checks. The implementation includes:
 
-1. A utility function `isBuildforceInitialized()` that checks if the `.buildforce` folder exists in a specified directory.
+1. A utility function `isBuildforceInitialized()` that checks if the `buildforce` folder exists in a specified directory.
 
 2. A user-friendly prompt function `promptForInitialization()` that:
 

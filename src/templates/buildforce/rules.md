@@ -13,7 +13,7 @@
 ## FILE SYSTEM STRUCTURE
 
 ```
-.buildforce/
+buildforce/
 ├── README.md                # Main directory guide
 ├── rules.md                 # This file - rules for LLMs
 ├── memory/                  # Project intelligence
