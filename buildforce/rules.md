@@ -10,6 +10,19 @@
 > 4. Use templates consistently with required sections fully completed
 > 5. Keep paths and references consistent with existing project structure
 
+```mermaid
+graph TD
+    A[Start] --> B{User Approval}
+    B -->|Yes| C[Update Documentation]
+    B -->|No| D[Request Changes]
+    D --> B
+    C --> E[Maintain Hierarchy]
+    E --> F[Use Templates]
+    F --> G[Keep Paths Consistent]
+    G --> H[Focus on Facts]
+    H --> I[End]
+```
+
 ## FILE SYSTEM STRUCTURE
 
 ```
@@ -26,7 +39,27 @@ buildforce/
 └── sessions/                # Development tracking
     ├── .active-session      # Points to current active session
     ├── completed/           # Completed sessions and tasks
-    └── planned/             # Planned work
+    └── planned/             # Planned sessions and tasks
+```
+
+```mermaid
+graph TD
+    A[buildforce/] --> B[README.md]
+    A --> C[rules.md]
+    A --> D[memory/]
+    A --> E[templates/]
+    A --> F[sessions/]
+
+    D --> D1[specification.md]
+    D --> D2[architecture.md]
+
+    E --> E1[session-template.md]
+    E --> E2[task-template.md]
+    E --> E3[*-template.md]
+
+    F --> F1[.active-session]
+    F --> F2[completed/]
+    F --> F3[planned/]
 ```
 
 ## TEMPLATE USAGE RULES
@@ -35,12 +68,31 @@ buildforce/
 - **NEVER** modify template structure or remove required sections
 - **FILL ALL** required fields in templates with factual information
 
-| Template Type                                                      | Purpose                     | Required Sections                                          |
-| ------------------------------------------------------------------ | --------------------------- | ---------------------------------------------------------- |
-| [session-template.md](./templates/session-template.md)             | Plan development sessions   | Objective, Tasks, Implementation Details, Expected Outcome |
-| [task-template.md](./templates/task-template.md)                   | Define concrete tasks       | Overview, Sub-Tasks, Implementation Plan, Testing          |
-| [architecture-template.md](./templates/architecture-template.md)   | Document system design      | Overview, Tech Stack, Build Management                     |
-| [specification-template.md](./templates/specification-template.md) | Define project requirements | Goals, Components, Considerations                          |
+```mermaid
+graph LR
+    A[Templates] --> B[Session Template]
+    A --> C[Task Template]
+    A --> D[Architecture Template]
+    A --> E[Specification Template]
+
+    B --> B1[Objective]
+    B --> B2[Tasks]
+    B --> B3[Implementation Details]
+    B --> B4[Expected Outcome]
+
+    C --> C1[Overview]
+    C --> C2[Sub-Tasks]
+    C --> C3[Implementation Plan]
+    C --> C4[Testing]
+
+    D --> D1[Overview]
+    D --> D2[Tech Stack]
+    D --> D3[Build Management]
+
+    E --> E1[Goals]
+    E --> E2[Components]
+    E --> E3[Considerations]
+```
 
 ## HIERARCHICAL STRUCTURE
 
@@ -53,6 +105,24 @@ Session (session-template.md)
 ├── Task 1 (task-template.md)
 ├── Task 2 (task-template.md)
 └── Task 3 (task-template.md)
+```
+
+```mermaid
+graph TD
+    A[Session] --> B[Chat History]
+    A --> C[Session Definition]
+    A --> D[Task 1]
+    A --> E[Task 2]
+    A --> F[Task 3]
+
+    D --> D1[Subtask 1.1]
+    D --> D2[Subtask 1.2]
+
+    E --> E1[Subtask 2.1]
+    E --> E2[Subtask 2.2]
+
+    F --> F1[Subtask 3.1]
+    F --> F2[Subtask 3.2]
 ```
 
 ### Single Session Organization
@@ -98,6 +168,8 @@ User message content
 Assistant response content
 ```
 
+### Session Components
+
 - **Sessions**: Development period with specific objective
 
   - MUST contain tasks
@@ -119,31 +191,85 @@ Assistant response content
 
    - ADD initial session folder (with a descriptive short name and the next iterative number - ex. "session-002-task-management") in `sessions/planned/` and a new session.md file in it. USE [session-template.md](./templates/session-template.md) for the file structure!
    - ADD a `.chat-history.md` and keep it updated as the conversation progresses
-   - REQUEST user confirmation on the plan
-   - ADD the planned tasks in the session's `tasks/` folder. USE [task-template.md](./templates/task-template.md) for the file structure!
    - UPDATE `.active-session` with the relative path to the session that the user is starting
+   - GATHER context from the user about the session they are about to start
+   - PROPOSE a plan for the session based on the context and the session template
+   - REQUEST user confirmation on the plan
+   - IF the user confirms the plan
+     - ADD the planned tasks in the session's `tasks/` folder. USE [task-template.md](./templates/task-template.md) for the file structure!
+     - UPDATE the session.md file with the plan
+   - ELSE keep iterating on the plan until the user confirms it
 
 2. **During Session**:
 
    - UPDATE task progress (check completed subtasks)
    - UPDATE chat history (each row should be either a user or assitant message following the (timestamp | role | message) structure)
-   - MAINTAIN `.active-session` to reflect current work
 
 3. **Completing Task**:
 
-   - REQUEST user confirmation
+   - REQUEST user confirmation on each completed task
+   - MAKE sure that all progress checkboxes are checked in the task file
    - ADD Recap section with summary of work in the task file
    - DOCUMENT key decisions (if any) in `session.md` of the active session
    - UPDATE `session.md` by marking the task as completed
+   - PROPOSE a commit message for each completed task and encourage the user to commit the changes
 
 4. **Completing Session**:
 
-   - REQUEST user confirmation
+   - REQUEST user confirmation on the session completion
    - ADD Recap section with summary of work in `session.md`
    - DOCUMENT challenges, solutions, and key decisions in `session.md` of the active session
    - MOVE completed session from `planned/` to `completed/`
    - UPDATE [architecture.md](./memory/architecture.md) and [specification.md](./memory/specification.md) with the summary of this session
    - CLEAR `.active-session` file
+
+```mermaid
+stateDiagram-v2
+    [*] --> StartingNewSession
+    StartingNewSession --> DuringSession: Plan Confirmed
+    DuringSession --> CompletingTask: Task Done
+    CompletingTask --> DuringSession: More Tasks
+    CompletingTask --> CompletingSession: All Tasks Done
+    CompletingSession --> [*]
+
+    state StartingNewSession {
+        [*] --> CreateSessionFolder
+        CreateSessionFolder --> AddChatHistory
+        AddChatHistory --> UpdateActiveSession
+        UpdateActiveSession --> GatherContext
+        GatherContext --> ProposePlan
+        ProposePlan --> UserConfirmation
+        UserConfirmation --> AddTasks: Confirmed
+        UserConfirmation --> ProposePlan: Not Confirmed
+        AddTasks --> [*]
+    }
+
+    state DuringSession {
+        [*] --> UpdateProgress
+        UpdateProgress --> UpdateChatHistory
+        UpdateChatHistory --> [*]
+    }
+
+    state CompletingTask {
+        [*] --> RequestConfirmation
+        RequestConfirmation --> CheckProgress
+        CheckProgress --> AddRecap
+        AddRecap --> DocumentDecisions
+        DocumentDecisions --> UpdateSession
+        UpdateSession --> ProposeCommit
+        ProposeCommit --> [*]
+    }
+
+    state CompletingSession {
+        [*] --> RequestConfirmation
+        RequestConfirmation --> AddRecap
+        AddRecap --> DocumentChallenges
+        DocumentChallenges --> MoveSession
+        MoveSession --> UpdateDocs
+        UpdateDocs --> ClearActiveSession
+        ClearActiveSession --> [*]
+    }
+```
 
 ## ONBOARDING PROCESS FOR NEW PROJECTS
 
@@ -166,6 +292,27 @@ Assistant response content
    - ALL files MUST be reviewed by human developer
    - MARK uncertain information clearly
    - REQUEST clarification on ambiguities
+
+```mermaid
+graph TD
+    A[Start Onboarding] --> B[Repository Analysis]
+    B --> C[Memory File Population]
+    C --> D[Review Requirements]
+
+    B --> B1[Scan Documentation]
+    B --> B2[Examine Config Files]
+    B --> B3[Identify Components]
+
+    C --> C1[Use Templates]
+    C --> C2[Extract Tech Stack]
+    C --> C3[Extract Project Structure]
+    C --> C4[Extract Goals]
+    C --> C5[Extract Components]
+
+    D --> D1[Review Files]
+    D --> D2[Mark Uncertain Info]
+    D --> D3[Request Clarification]
+```
 
 ## DOCUMENTATION UPDATE RULES
 
@@ -190,6 +337,25 @@ Assistant response content
 - Flag items needing review
 - Seek user approval before updating project docs
 
+```mermaid
+graph TD
+    A[Documentation Update] --> B{User Approved?}
+    B -->|No| C[Request Approval]
+    C --> B
+    B -->|Yes| D{Implementation Complete?}
+    D -->|No| E[Complete Implementation]
+    E --> D
+    D -->|Yes| F{Results Validated?}
+    F -->|No| G[Validate Results]
+    G --> F
+    F -->|Yes| H[Update Documentation]
+
+    H --> I[Update Task Progress]
+    H --> J[Link Code Changes]
+    H --> K[Document Task Info]
+    H --> L[Flag Review Items]
+```
+
 ## LLM RESPONSIBILITIES
 
 1. **Maintain Accurate Context**
@@ -210,3 +376,24 @@ Assistant response content
    - ORGANIZE information hierarchically
    - CROSS-REFERENCE related information
    - INCLUDE metadata for easier retrieval
+
+```mermaid
+graph TD
+    A[LLM Responsibilities] --> B[Maintain Context]
+    A --> C[Support Workflow]
+    A --> D[Optimize Inference]
+
+    B --> B1[Keep Docs Current]
+    B --> B2[Preserve History]
+    B --> B3[Integrate Info]
+
+    C --> C1[Flag Updates]
+    C --> C2[Follow Hierarchy]
+    C --> C3[Document Work]
+    C --> C4[Maintain Consistency]
+
+    D --> D1[Use Consistent Format]
+    D --> D2[Organize Hierarchically]
+    D --> D3[Cross-Reference]
+    D --> D4[Include Metadata]
+```
