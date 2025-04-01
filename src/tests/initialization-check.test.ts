@@ -1,69 +1,66 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
 
-/**
- * Parse command line arguments
- * @returns Object containing parsed arguments
- */
-const parseArgs = (): { dir?: string } => {
-  const args: { dir?: string } = {};
+describe("Initialization Check", () => {
+  let testDir: string;
 
-  process.argv.forEach((arg, index) => {
-    if (arg === "--dir" && process.argv[index + 1]) {
-      args.dir = process.argv[index + 1];
-    } else if (arg.startsWith("--dir=")) {
-      args.dir = arg.split("=")[1];
-    }
+  beforeEach(() => {
+    testDir = createTempTestDir();
   });
 
-  return args;
+  afterEach(() => {
+    cleanupTempDir(testDir);
+  });
+
+  it("should detect uninitialized buildforce project", () => {
+    expect(isBuildforceInitialized(testDir)).toBe(false);
+  });
+
+  it("should detect initialized buildforce project", () => {
+    // Create buildforce directory
+    const buildforceDir = path.join(testDir, "buildforce");
+    fs.mkdirSync(buildforceDir, { recursive: true });
+
+    expect(isBuildforceInitialized(testDir)).toBe(true);
+  });
+
+  it("should handle non-existent directories", () => {
+    const nonExistentDir = path.join(testDir, "non-existent");
+    expect(isBuildforceInitialized(nonExistentDir)).toBe(false);
+  });
+
+  it("should handle permission errors", () => {
+    // Create directory with no read permissions
+    const restrictedDir = path.join(testDir, "restricted");
+    fs.mkdirSync(restrictedDir, { recursive: true });
+    fs.chmodSync(restrictedDir, 0o000);
+
+    expect(isBuildforceInitialized(restrictedDir)).toBe(false);
+
+    // Restore permissions for cleanup
+    fs.chmodSync(restrictedDir, 0o777);
+  });
+});
+
+// Helper functions
+const createTempTestDir = (): string => {
+  const tempDir = path.join(os.tmpdir(), `buildforce-test-${Date.now()}`);
+  fs.mkdirSync(tempDir, { recursive: true });
+  return tempDir;
 };
 
-/**
- * Checks if the buildforce folder exists in the specified directory
- * @param dir Directory to check
- * @returns boolean indicating if the project is initialized
- */
+const cleanupTempDir = (dir: string): void => {
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+};
+
 const isBuildforceInitialized = (dir: string): boolean => {
-  const buildforceDir = path.join(dir, "buildforce");
-  return fs.existsSync(buildforceDir);
-};
-
-/**
- * Test function to verify the initialization check
- */
-const testInitializationCheck = (): void => {
-  const args = parseArgs();
-  const testDir = args.dir || process.cwd();
-
-  console.log("Testing initialization check:");
-  console.log(`Test directory: ${testDir}`);
-  console.log(`Buildforce directory path: ${path.join(testDir, "buildforce")}`);
-  console.log(`Is buildforce initialized: ${isBuildforceInitialized(testDir)}`);
-
-  // If not initialized, simulate the prompt
-  if (!isBuildforceInitialized(testDir)) {
-    console.log("Buildforce not initialized for this project.");
-    console.log("Would prompt for initialization here.");
-  } else {
-    console.log(
-      "Buildforce is already initialized, would proceed with planning."
-    );
-  }
-
-  // List files in test directory
-  console.log("\nFiles in test directory:");
   try {
-    const files = fs.readdirSync(testDir);
-    files.forEach((file) => console.log(` - ${file}`));
+    const buildforceDir = path.join(dir, "buildforce");
+    return fs.existsSync(buildforceDir);
   } catch (error) {
-    if (error instanceof Error) {
-      console.error(`Error listing files: ${error.message}`);
-    } else {
-      console.error("Unknown error occurred while listing files");
-    }
+    return false;
   }
 };
-
-// Run the test
-testInitializationCheck();

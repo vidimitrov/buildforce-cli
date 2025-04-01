@@ -1,6 +1,91 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import { ProjectAnalyzer, FileTools } from "../types/project";
+
+describe("PlanCommand Integration", () => {
+  let testDir: string;
+  let mockAnalyzer: jest.Mocked<ProjectAnalyzer>;
+  let mockFileTools: jest.Mocked<FileTools>;
+
+  beforeEach(() => {
+    testDir = createTempTestDir();
+
+    mockAnalyzer = {
+      analyzeProject: jest.fn(),
+    } as any;
+
+    mockFileTools = {
+      readFile: jest.fn(),
+      writeFile: jest.fn(),
+      exists: jest.fn(),
+      mkdir: jest.fn(),
+    } as any;
+
+    // Set up test environment
+    setupTestEnvironment(testDir);
+  });
+
+  afterEach(() => {
+    cleanupTempDir(testDir);
+  });
+
+  it("should create a new planned session", async () => {
+    // Execute plan command simulation
+    const planResult = simulatePlanCommand(testDir);
+    expect(planResult.success).toBe(true);
+    expect(planResult.sessionNumber).toBe("002"); // Since we have session-001 in setup
+
+    // Verify results
+    const verification = verifyPlanResults(testDir, planResult.sessionNumber);
+    expect(verification.isValid).toBe(true);
+    expect(verification.hasHistory).toBe(true);
+    expect(verification.errors).toHaveLength(0);
+  });
+
+  it("should update active session file", async () => {
+    const planResult = simulatePlanCommand(testDir);
+    const activeSessionPath = path.join(
+      testDir,
+      "buildforce",
+      "sessions",
+      ".active-session"
+    );
+
+    const activeSession = fs.readFileSync(activeSessionPath, "utf8").trim();
+    expect(activeSession).toBe(`planned/session-${planResult.sessionNumber}`);
+  });
+
+  it("should create chat history with initial message", async () => {
+    const planResult = simulatePlanCommand(testDir);
+    const historyPath = path.join(
+      testDir,
+      "buildforce",
+      "sessions",
+      "planned",
+      `session-${planResult.sessionNumber}`,
+      ".chat-history.md"
+    );
+
+    expect(fs.existsSync(historyPath)).toBe(true);
+    const history = fs.readFileSync(historyPath, "utf8");
+    expect(history).toContain("Hey! What would you like to work on next?");
+  });
+
+  it("should handle errors gracefully", async () => {
+    // Simulate error by making sessions directory read-only
+    const sessionsDir = path.join(testDir, "buildforce", "sessions");
+    fs.chmodSync(sessionsDir, 0o444);
+
+    const planResult = simulatePlanCommand(testDir);
+    expect(planResult.success).toBe(false);
+    expect(planResult.sessionNumber).toBe("");
+    expect(planResult.chatHistory).toBe("");
+
+    // Restore permissions for cleanup
+    fs.chmodSync(sessionsDir, 0o777);
+  });
+});
 
 /**
  * Creates a temporary directory for testing
@@ -222,58 +307,3 @@ const verifyPlanResults = (
 
   return result;
 };
-
-/**
- * Test the plan command functionality
- */
-const testPlanCommand = (): void => {
-  console.log("Testing plan command functionality:");
-
-  // Create a temporary directory for testing
-  const testDir = createTempTestDir();
-  console.log(`Created test directory: ${testDir}`);
-
-  try {
-    // Set up test environment
-    console.log("Setting up test environment...");
-    const setupResult = setupTestEnvironment(testDir);
-    console.log(`Setup result: ${setupResult ? "Success" : "Failed"}`);
-
-    if (!setupResult) {
-      console.log("Failed to set up test environment");
-      return;
-    }
-
-    // Run the plan command simulation
-    console.log("\nSimulating plan command...");
-    const planResult = simulatePlanCommand(testDir);
-    console.log(
-      `Plan command simulation: ${planResult.success ? "Success" : "Failed"}`
-    );
-    console.log(`New session number: ${planResult.sessionNumber}`);
-    console.log("Initial chat history:");
-    console.log(planResult.chatHistory);
-
-    // Verify results
-    console.log("\nVerifying results...");
-    const verification = verifyPlanResults(testDir, planResult.sessionNumber);
-    console.log(
-      `Verification result: ${verification.isValid ? "Valid" : "Invalid"}`
-    );
-    console.log(`Active session: ${verification.activeSession}`);
-    console.log(`Has chat history: ${verification.hasHistory}`);
-
-    if (!verification.isValid) {
-      console.log("\nErrors found:");
-      verification.errors.forEach((error) => console.log(` - ${error}`));
-    }
-  } finally {
-    // Clean up
-    console.log(`\nCleaning up test directory: ${testDir}`);
-    cleanupTempDir(testDir);
-    console.log("Test completed.");
-  }
-};
-
-// Run the test
-testPlanCommand();
