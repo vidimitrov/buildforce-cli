@@ -58,12 +58,26 @@ buildforce-cli/
   - Sets up appropriate rule files based on selection
   - Handles existing files by appending content rather than overwriting
   - Checks for already initialized projects
+  - Interactive OpenRouter configuration with validation
 - **plan**: Start planning a new coding session
   - Includes initialization check and prompt for uninitialized projects
   - Seamless continuation to planning after initialization
+  - Supports temporary model/key overrides via command options
+  - Automatic session management with chat history
+  - Context-aware system prompts with project memory
 
-## Notes
+## Model Configuration
 
-- Basic test infrastructure implemented for initialization checks
-- Binary is exposed as "buildforce" command when installed
-- AI tools integration allows for seamless setup of rule files for different AI-assisted coding tools
+- **Environment Variables**: OpenRouter configuration via OPENROUTER\_\* variables
+  - OPENROUTER_API_KEY: API key for authentication
+  - OPENROUTER_MODEL: Model selection (defaults to claude-3.7-sonnet:thinking)
+- **Override Options**: Temporary configuration via command options
+  - --api-key: Override API key for current session
+  - --model: Override model for current session
+
+## Testing Infrastructure
+
+- Comprehensive test suite for core functionality
+- Test utilities for temporary directory management
+- Individual test commands for specific features
+- Automated verification of command behavior

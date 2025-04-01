@@ -5,7 +5,7 @@ alwaysApply: true
 ---
 # Buildforce rules
 
-Strictly follow the rules in [rules.md](mdc:buildforce/rules.md)
+Strictly follow the rules in [rules.md](./buildforce/rules.md)
 
 # Code implementation rules
 

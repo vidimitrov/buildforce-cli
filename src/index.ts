@@ -10,18 +10,279 @@ import * as path from "path";
 import * as readline from "readline";
 import inquirer from "inquirer";
 
-const model = new ChatOpenAI();
+/**
+ * Gets the OpenRouter API configuration from environment variables
+ * @returns Configuration object with API key and model
+ * @throws Error if no API key is found
+ */
+const getModelConfig = () => {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  const model =
+    process.env.OPENROUTER_MODEL || "anthropic/claude-3.7-sonnet:thinking";
 
-const askModel = async (input: string) => {
+  if (!apiKey) {
+    throw new Error(
+      "OpenRouter API key not found. Please set OPENROUTER_API_KEY in your .env file."
+    );
+  }
+
+  return { apiKey, model };
+};
+
+/**
+ * Gets model configuration with optional overrides
+ * @param options Optional overrides for API key and model
+ * @returns Configuration object with API key and model
+ */
+const getModelConfigWithOverrides = (options?: {
+  apiKey?: string;
+  model?: string;
+}) => {
+  const config = getModelConfig();
+  return {
+    apiKey: options?.apiKey || config.apiKey,
+    model: options?.model || config.model,
+  };
+};
+
+/**
+ * Initializes a ChatOpenAI instance with configuration
+ * @param options Optional overrides for API key and model
+ * @returns ChatOpenAI instance
+ */
+const initializeModel = (options?: { apiKey?: string; model?: string }) => {
+  const config = getModelConfigWithOverrides(options);
+  return new ChatOpenAI({
+    apiKey: config.apiKey,
+    model: config.model,
+    temperature: 0.3,
+    configuration: {
+      baseURL: "https://openrouter.ai/api/v1",
+    },
+  });
+};
+
+/**
+ * Reads a context file with fallback to default content
+ * @param filePath Path to the context file
+ * @param defaultContent Default content if file cannot be read
+ * @returns Content of the file or default content
+ */
+const readContextFile = (filePath: string, defaultContent = ""): string => {
+  try {
+    return fs.readFileSync(path.join(process.cwd(), filePath), "utf8");
+  } catch (error) {
+    console.warn(`Warning: Could not read ${filePath}:`, error);
+    return defaultContent;
+  }
+};
+
+/**
+ * Gets the next session number
+ * @returns Next session number (e.g., "004" if last session was "003")
+ */
+const getNextSessionNumber = (): string => {
+  const sessionsDir = path.join(process.cwd(), "buildforce", "sessions");
+  const completedDir = path.join(sessionsDir, "completed");
+  const plannedDir = path.join(sessionsDir, "planned");
+
+  let maxNumber = 0;
+
+  // Helper to scan directory for session numbers
+  const scanDir = (dir: string) => {
+    if (!fs.existsSync(dir)) return;
+    const entries = fs.readdirSync(dir);
+    for (const entry of entries) {
+      const match = entry.match(/^session-(\d{3})/);
+      if (match) {
+        const num = parseInt(match[1]);
+        maxNumber = Math.max(maxNumber, num);
+      }
+    }
+  };
+
+  // Scan both completed and planned directories
+  scanDir(completedDir);
+  scanDir(plannedDir);
+
+  // Format next number with leading zeros
+  return String(maxNumber + 1).padStart(3, "0");
+};
+
+/**
+ * Creates a new planning session
+ * @returns Path to the new session
+ */
+const createNewSession = (): string => {
+  const nextNumber = getNextSessionNumber();
+  const sessionName = `session-${nextNumber}`;
+  const sessionPath = path.join(
+    process.cwd(),
+    "buildforce",
+    "sessions",
+    "planned",
+    sessionName
+  );
+
+  // Create session directory and chat history file
+  fs.mkdirSync(sessionPath, { recursive: true });
+  fs.writeFileSync(path.join(sessionPath, ".chat-history.md"), "");
+
+  // Update active session file
+  const activeSessionPath = path.join(
+    process.cwd(),
+    "buildforce",
+    "sessions",
+    ".active-session"
+  );
+  fs.writeFileSync(activeSessionPath, `planned/${sessionName}\n`);
+
+  return sessionPath;
+};
+
+/**
+ * Gets the path to the active session
+ * @returns Path to the active session or null if not found
+ */
+const getActiveSessionPath = (): string | null => {
+  const activeSessionFilePath = path.join(
+    process.cwd(),
+    "buildforce",
+    "sessions",
+    ".active-session"
+  );
+
+  try {
+    if (fs.existsSync(activeSessionFilePath)) {
+      const activeSession = fs
+        .readFileSync(activeSessionFilePath, "utf8")
+        .trim();
+      if (activeSession) {
+        return path.join(
+          process.cwd(),
+          "buildforce",
+          "sessions",
+          activeSession
+        );
+      }
+    }
+    return null;
+  } catch (error) {
+    console.warn("Warning: Could not read active session:", error);
+    return null;
+  }
+};
+
+/**
+ * Gets the current chat history
+ * @returns Chat history content or default message if not available
+ */
+const getChatHistory = (): string => {
+  const activeSessionPath = getActiveSessionPath();
+  if (activeSessionPath) {
+    const chatHistoryPath = path.join(activeSessionPath, ".chat-history.md");
+    try {
+      if (fs.existsSync(chatHistoryPath)) {
+        return fs.readFileSync(chatHistoryPath, "utf8");
+      }
+    } catch (error) {
+      console.warn("Warning: Could not read chat history:", error);
+    }
+  }
+  return "No chat history available.";
+};
+
+/**
+ * Updates the chat history with a new message
+ * @param role Role of the message sender (User or Assistant)
+ * @param content Content of the message
+ */
+const updateChatHistory = async (
+  role: "User" | "Assistant",
+  content: string
+): Promise<void> => {
+  const activeSessionPath = getActiveSessionPath();
+  if (!activeSessionPath) {
+    console.warn("Warning: No active session to update chat history");
+    return;
+  }
+
+  const chatHistoryPath = path.join(activeSessionPath, ".chat-history.md");
+  const timestamp = new Date().toISOString();
+  const entry = `\n## ${timestamp} | ${role}\n\n${content}\n`;
+
+  try {
+    fs.appendFileSync(chatHistoryPath, entry);
+  } catch (error) {
+    console.error("Error updating chat history:", error);
+    throw error;
+  }
+};
+
+/**
+ * Builds the system prompt with project context and current session history
+ * @returns Complete system prompt with rules, project memory, and chat history
+ */
+const buildSystemPrompt = (): string => {
+  const buildforceRules = readContextFile("buildforce/rules.md");
+  const architecture = readContextFile("buildforce/memory/architecture.md");
+  const specification = readContextFile("buildforce/memory/specification.md");
+  const chatHistory = getChatHistory();
+
+  return `You are a planning agent that follows the Buildforce workflow rules.
+
+# Buildforce Rules
+${buildforceRules}
+
+# Project Architecture
+${architecture}
+
+# Project Specification
+${specification}
+
+# Current Session History
+${chatHistory}
+
+Your goal is to brainstorm with the user about the session they are about to start, and once all the needed information is in place, to construct a detailed plan and create the needed session files as described in the Buildforce rules. Be friendly and engaging, and refer back to previous messages in the conversation to maintain context.`;
+};
+
+/**
+ * Starts a new planning conversation
+ * @param modelInstance ChatOpenAI instance to use
+ * @returns Initial welcome message
+ */
+const startPlanningConversation = async (
+  modelInstance: ChatOpenAI
+): Promise<string> => {
+  const welcomeMessage = "Hey! What would you like to work on next?";
+  await updateChatHistory("Assistant", welcomeMessage);
+  return welcomeMessage;
+};
+
+/**
+ * Asks the model a question and returns the response
+ * @param input The input text to send to the model
+ * @param modelInstance ChatOpenAI instance to use
+ * @returns Promise with the model's response
+ */
+const askModel = async (input: string, modelInstance: ChatOpenAI) => {
+  // First update chat history with user input
+  await updateChatHistory("User", input);
+
   const prompt = ChatPromptTemplate.fromMessages([
-    new SystemMessage("You're a helpful assistant"),
+    new SystemMessage(buildSystemPrompt()),
     new HumanMessage(input),
   ]);
 
   const parser = new StringOutputParser();
-  const chain = prompt.pipe(model).pipe(parser);
+  const chain = prompt.pipe(modelInstance).pipe(parser);
 
-  return await chain.invoke(input);
+  const response = await chain.invoke(input);
+
+  // Then update chat history with assistant's response
+  await updateChatHistory("Assistant", response);
+
+  return response;
 };
 
 // AI Tools selection interface
@@ -67,6 +328,103 @@ const getRulesTemplateDir = () => {
   throw new Error(
     "Rules template directory not found. Please ensure the templates are properly copied during build."
   );
+};
+
+/**
+ * Checks if OpenRouter configuration exists in environment
+ * @returns boolean indicating if both API key and model are configured
+ */
+const hasOpenRouterConfig = (): boolean => {
+  return Boolean(
+    process.env.OPENROUTER_API_KEY && process.env.OPENROUTER_MODEL
+  );
+};
+
+/**
+ * Gets existing OpenRouter configuration from environment
+ * @returns Configuration object with API key and model
+ */
+const getExistingOpenRouterConfig = (): { apiKey: string; model: string } => {
+  return {
+    apiKey: process.env.OPENROUTER_API_KEY || "",
+    model:
+      process.env.OPENROUTER_MODEL || "anthropic/claude-3.7-sonnet:thinking",
+  };
+};
+
+/**
+ * Prompts the user for OpenRouter configuration if needed
+ * @returns Promise with API key and model configuration
+ */
+const promptForOpenRouterConfig = async (): Promise<{
+  apiKey: string;
+  model: string;
+}> => {
+  // If configuration exists, return it
+  if (hasOpenRouterConfig()) {
+    return getExistingOpenRouterConfig();
+  }
+
+  try {
+    const answers = await inquirer.prompt([
+      {
+        type: "input",
+        name: "apiKey",
+        message: "Enter your OpenRouter API key:",
+        validate: (input) => input.trim() !== "" || "API key is required",
+      },
+      {
+        type: "input",
+        name: "model",
+        message:
+          "Enter OpenRouter model (default: anthropic/claude-3.7-sonnet:thinking):",
+        default: "anthropic/claude-3.7-sonnet:thinking",
+      },
+    ]);
+
+    return answers as { apiKey: string; model: string };
+  } catch (error) {
+    console.error("Error prompting for OpenRouter configuration:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates the .env file with OpenRouter configuration
+ * @param apiKey OpenRouter API key
+ * @param model OpenRouter model name
+ */
+const updateEnvFile = (apiKey: string, model: string) => {
+  const envPath = path.join(process.cwd(), ".env");
+  let envContent = "";
+
+  // Read existing .env if it exists
+  if (fs.existsSync(envPath)) {
+    envContent = fs.readFileSync(envPath, "utf8");
+  }
+
+  // Update or add OPENROUTER_API_KEY
+  if (envContent.includes("OPENROUTER_API_KEY=")) {
+    envContent = envContent.replace(
+      /OPENROUTER_API_KEY=.*\n?/,
+      `OPENROUTER_API_KEY=${apiKey}\n`
+    );
+  } else {
+    envContent += `\nOPENROUTER_API_KEY=${apiKey}`;
+  }
+
+  // Update or add OPENROUTER_MODEL
+  if (envContent.includes("OPENROUTER_MODEL=")) {
+    envContent = envContent.replace(
+      /OPENROUTER_MODEL=.*\n?/,
+      `OPENROUTER_MODEL=${model}\n`
+    );
+  } else {
+    envContent += `\nOPENROUTER_MODEL=${model}`;
+  }
+
+  // Write back to .env
+  fs.writeFileSync(envPath, envContent.trim() + "\n");
 };
 
 const copyBuildforceTemplate = async (
@@ -260,10 +618,30 @@ program
 
       console.log("Initializing project...");
 
+      // Get OpenRouter configuration if needed
+      const config = await promptForOpenRouterConfig();
+      let configUpdated = false;
+
       // Ask which AI tools the user uses
       const aiToolsSelection = await promptForAITools();
 
+      // Copy templates and setup rules
       await copyBuildforceTemplate(process.cwd(), aiToolsSelection);
+
+      // Update environment configuration only if we prompted for it
+      if (!hasOpenRouterConfig()) {
+        await updateEnvFile(config.apiKey, config.model);
+        configUpdated = true;
+      }
+
+      // Show appropriate success message
+      if (configUpdated) {
+        console.log(
+          "Successfully initialized project with OpenRouter configuration"
+        );
+      } else {
+        console.log("Successfully initialized project");
+      }
     } catch (error) {
       console.error("Error initializing project:", error);
       process.exit(1);
@@ -324,12 +702,22 @@ const promptForInitialization = async (): Promise<boolean> => {
     // Close readline interface
     rl.close();
 
+    // Get OpenRouter configuration if needed
+    const config = await promptForOpenRouterConfig();
+    let configUpdated = false;
+
     // Ask which AI tools the user uses
     const aiToolsSelection = await promptForAITools();
 
     // Initialize the project
     console.log(`Initializing project "${projectName}"...`);
     await copyBuildforceTemplate(process.cwd(), aiToolsSelection);
+
+    // Update environment configuration only if we prompted for it
+    if (!hasOpenRouterConfig()) {
+      await updateEnvFile(config.apiKey, config.model);
+      configUpdated = true;
+    }
 
     return true;
   } catch (error) {
@@ -369,49 +757,78 @@ const promptForAITools = async (): Promise<AIToolsSelection> => {
 program
   .command("plan")
   .description("Start planning a new coding session")
-  .action(async () => {
-    // Check if buildforce folder exists
-    if (!isBuildforceInitialized()) {
-      console.log("Buildforce not initialized for this project.");
-      const initialized = await promptForInitialization();
+  .option("--api-key <key>", "Temporarily override the OpenRouter API key")
+  .option("--model <model>", "Temporarily override the OpenRouter model")
+  .action(async (options) => {
+    try {
+      // Check if buildforce folder exists
+      if (!isBuildforceInitialized()) {
+        console.log("Buildforce not initialized for this project.");
+        const initialized = await promptForInitialization();
 
-      if (!initialized) {
-        // User chose not to initialize, exit the command
-        return;
+        if (!initialized) {
+          // User chose not to initialize, exit the command
+          return;
+        }
+
+        // Successfully initialized, continue with planning
+        console.log("Initialization complete.");
       }
 
-      // Successfully initialized, continue with planning
-      console.log("Initialization complete. Starting planning session...");
-    }
+      console.log("Starting a new coding session...");
+      console.log("Gathering project context...");
 
-    // Existing plan command functionality
-    let conversationActive = true;
-    let question = "What would you like to work on?";
+      // Create new session
+      createNewSession();
 
-    while (conversationActive) {
-      const answer = await askModel(question);
-      console.log(`\nBuildforce: ${answer}\n`);
-
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
+      // Initialize model with potential overrides
+      const modelInstance = initializeModel({
+        apiKey: options.apiKey,
+        model: options.model,
       });
 
-      const userInput = await new Promise<string>((resolve) => {
-        rl.question("Your response (type EXIT or STOP to end): ", resolve);
-      });
-
-      rl.close();
-
-      if (
-        userInput.toUpperCase() === "EXIT" ||
-        userInput.toUpperCase() === "STOP"
-      ) {
-        conversationActive = false;
-        console.log("\nEnding conversation...\n");
-      } else {
-        question = userInput;
+      // If using overrides, log the configuration
+      if (options.apiKey || options.model) {
+        console.log("\nUsing temporary configuration overrides:");
+        if (options.apiKey) console.log("- Custom API key");
+        if (options.model) console.log(`- Model: ${options.model}`);
+        console.log(); // Empty line for spacing
       }
+
+      // Start planning conversation
+      let conversationActive = true;
+
+      // Initial welcome message
+      const welcome = await startPlanningConversation(modelInstance);
+      console.log(`\nBuildforce: ${welcome}\n`);
+
+      while (conversationActive) {
+        const rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout,
+        });
+
+        const userInput = await new Promise<string>((resolve) => {
+          rl.question("> ", resolve);
+        });
+
+        rl.close();
+
+        if (
+          userInput.toUpperCase() === "EXIT" ||
+          userInput.toUpperCase() === "STOP"
+        ) {
+          conversationActive = false;
+          console.log("\nEnding conversation...\n");
+        } else {
+          console.log("\nThinking...");
+          const answer = await askModel(userInput, modelInstance);
+          console.log(`\nBuildforce: ${answer}\n`);
+        }
+      }
+    } catch (error) {
+      console.error("Error during planning session:", error);
+      process.exit(1);
     }
   });
 

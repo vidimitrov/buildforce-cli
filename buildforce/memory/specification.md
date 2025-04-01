@@ -16,15 +16,20 @@ The Buildforce CLI aims to provide a command-line interface for accessing and ut
 2. **AI/LLM Integration**
 
    - LangChain integration for AI capabilities
-   - OpenAI service connection
+   - OpenRouter API integration
+   - Context-aware system prompts
    - Template processing
    - AI tools rule file management (Cursor, Cline, Windsurf)
+   - Session-based chat history tracking
+   - Project memory integration
 
 3. **Configuration Management**
-   - Environment variable handling
+   - Environment variable handling with validation
+   - Flexible model configuration with overrides
    - User settings management
    - Template management
    - AI tools rule file setup and configuration
+   - Session state management
 
 ## Considerations
 
@@ -51,16 +56,34 @@ The Buildforce CLI aims to provide a command-line interface for accessing and ut
 - Seamless project initialization flow
   - Automatic detection of uninitialized projects
   - User-friendly prompts with sensible defaults
+  - Interactive model configuration
   - Smooth transition from initialization to planning
   - AI tools selection with checkbox prompts
   - Intelligent handling of existing files
+- Enhanced planning experience
+  - Automatic session management
+  - Context-aware conversations
+  - Progress indicators and loading states
+  - Temporary configuration overrides
+
+### Testing
+
+- Comprehensive test suite
+  - Command functionality verification
+  - Configuration management testing
+  - Session handling validation
+  - Error handling coverage
+- Test utilities for development
+  - Temporary directory management
+  - Environment simulation
+  - State verification
 
 ## Future Enhancements
 
-- Test suite implementation
 - Additional command coverage
 - Enhanced error handling
 - Documentation improvements
 - Support for additional AI-assisted coding tools
+- Advanced session management features
 
 Note: This specification is based on initial repository analysis and may need updates as more information becomes available.
