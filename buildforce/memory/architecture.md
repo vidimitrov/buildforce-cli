@@ -31,6 +31,30 @@ buildforce-cli/
 └── configuration files   # Various config files (package.json, tsconfig.json, etc.)
 ```
 
+### Automatic Onboarding System
+
+The project includes an automatic onboarding system that generates project documentation during the `buildforce init` command. This system consists of:
+
+1. **InitAgent**: A dedicated agent that handles the initialization process
+
+   - Analyzes project structure and dependencies
+   - Generates architecture.md and specification.md
+   - Provides user feedback and error handling
+
+2. **Analysis System**: A chunked analysis approach that:
+
+   - Breaks down project analysis into manageable chunks
+   - Prioritizes chunks based on relevance
+   - Processes chunks in order until sufficient information is gathered
+
+3. **Documentation Generation**:
+   - Uses Eta templates for dynamic content generation
+   - Focuses on documentation and configuration files first
+   - Allows for manual review and refinement
+   - Maintains clear stopping criteria for analysis
+
+The system is designed to be modular and extensible, with proper error handling and comprehensive test coverage.
+
 ## Build Management
 
 - **Build Tool**: TypeScript Compiler (tsc)

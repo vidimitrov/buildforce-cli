@@ -43,6 +43,28 @@ export class FileToolsImpl implements FileTools {
     }
   }
 
+  async exists(path: string): Promise<boolean> {
+    try {
+      const fullPath = this.resolvePath(path);
+      await fs.access(fullPath);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async mkdir(path: string): Promise<void> {
+    try {
+      const fullPath = this.resolvePath(path);
+      await fs.mkdir(fullPath, { recursive: true });
+    } catch (error) {
+      throw new FileOperationError(
+        `Failed to create directory: ${path}`,
+        error
+      );
+    }
+  }
+
   private resolvePath(path: string): string {
     return path.startsWith("/") ? path : join(this.rootDir, path);
   }

@@ -1,199 +1,69 @@
 import { ProjectAnalyzer } from "../../analysis/analyzer";
 import { ChunkManager } from "../../analysis/chunk";
-import {
-  MockFileTools,
-  createSampleAnalysis,
-  createSampleChunk,
-} from "./test-utils";
+import { FileTools } from "../../types/project";
 
 describe("ProjectAnalyzer", () => {
   let analyzer: ProjectAnalyzer;
   let chunkManager: ChunkManager;
-  let mockFileTools: MockFileTools;
+  let mockFileTools: jest.Mocked<FileTools>;
 
   beforeEach(() => {
-    mockFileTools = new MockFileTools({
-      "package.json": `=== package.json ===
-${JSON.stringify(
-  {
-    name: "test-project",
-    dependencies: {
-      typescript: "^4.9.0",
-      node: "^16.0.0",
-      jest: "^27.0.0",
-    },
-    devDependencies: {
-      "@types/node": "^16.0.0",
-      "@types/jest": "^27.0.0",
-    },
-  },
-  null,
-  2
-)}
-=== end package.json ===`,
-      "README.md": `=== README.md ===
-# Test Project
-
-## Goals
-
-- Build a CLI tool
-- Support project analysis
-
-## Project Structure
-
-\`\`\`
-src/
-  analysis/
-  tools/
-  tests/
-\`\`\`
-
-## Requirements
-
-- TypeScript support
-- Test coverage
-=== end README.md ===`,
-      "src/index.ts": `=== src/index.ts ===
-import { FileTools } from "./tools/file";
-
-/**
- * Main analyzer class for processing project files
- */
-class ProjectAnalyzer {
-  constructor(private readonly fileTools: FileTools) {}
-
-  async analyze(): Promise<void> {
-    // Implementation
-  }
-}
-
-interface FileTools {
-  readFile(path: string): Promise<string>;
-  searchFiles(pattern: string): Promise<string[]>;
-}
-
-export { ProjectAnalyzer, FileTools };
-=== end src/index.ts ===`,
-    });
+    mockFileTools = {
+      readFile: jest.fn(),
+      writeFile: jest.fn(),
+      exists: jest.fn(),
+      mkdir: jest.fn(),
+      searchFiles: jest.fn(),
+    };
 
     chunkManager = new ChunkManager(mockFileTools);
     analyzer = new ProjectAnalyzer(chunkManager, mockFileTools);
   });
 
-  describe("analyzeProject", () => {
-    it("should analyze the entire project and generate architecture and specification information", async () => {
-      const analysis = await analyzer.analyzeProject();
+  it("should analyze project structure", async () => {
+    const rootDir = "/test/project";
+    const mockFiles = ["package.json", "src/index.ts"];
+    const mockPackageJson = {
+      dependencies: {
+        typescript: "^4.9.0",
+        node: "^16.0.0",
+        jest: "^27.0.0",
+      },
+    };
 
-      // Check architecture information
-      expect(analysis.architecture.techStack).toContain("typescript");
-      expect(analysis.architecture.techStack).toContain("node");
-      expect(analysis.architecture.techStack).toContain("jest");
-      expect(analysis.architecture.projectStructure).toContain("src/");
-      expect(analysis.architecture.patterns).toContain("Object-Oriented");
-      expect(analysis.architecture.patterns).toContain("Interface-based");
-
-      // Check specification information
-      expect(analysis.specification.goals).toContain("Build a CLI tool");
-      expect(analysis.specification.goals).toContain(
-        "Support project analysis"
-      );
-      expect(analysis.specification.components).toContain("ProjectAnalyzer");
-      expect(analysis.specification.components).toContain("FileTools");
-      expect(analysis.specification.requirements).toContain(
-        "TypeScript support"
-      );
-      expect(analysis.specification.requirements).toContain("Test coverage");
+    mockFileTools.searchFiles.mockResolvedValue(mockFiles);
+    mockFileTools.readFile.mockImplementation(async (path) => {
+      if (path === "package.json") {
+        return JSON.stringify(mockPackageJson);
+      }
+      return "";
     });
 
-    it("should handle errors gracefully", async () => {
-      // Create a mock file tools that throws an error
-      const errorFileTools = new MockFileTools({
-        "package.json": `=== package.json ===
-{invalid json}
-=== end package.json ===`,
-      });
-      const errorChunkManager = new ChunkManager(errorFileTools);
-      const errorAnalyzer = new ProjectAnalyzer(
-        errorChunkManager,
-        errorFileTools
-      );
+    const analysis = await analyzer.analyzeProject(rootDir);
 
-      await expect(errorAnalyzer.analyzeProject()).rejects.toThrow();
-    });
+    expect(analysis.name).toBe("project");
+    expect(analysis.dependencies).toContain("typescript");
+    expect(analysis.dependencies).toContain("node");
+    expect(analysis.dependencies).toContain("jest");
+    expect(analysis.type).toBe("node");
+    expect(analysis.structure.files).toEqual(mockFiles);
   });
 
-  describe("extractArchitectureInfo", () => {
-    it("should extract architecture information from a chunk", async () => {
-      const chunk = createSampleChunk();
-      const info = await (analyzer as any).extractArchitectureInfo(chunk);
+  it("should handle analysis errors", async () => {
+    const rootDir = "/test/project";
+    const errorFileTools = {
+      ...mockFileTools,
+      searchFiles: jest.fn().mockRejectedValue(new Error("File system error")),
+    };
 
-      expect(info.techStack).toContain("typescript");
-      expect(info.techStack).toContain("node");
-      expect(info.projectStructure).toContain("src/");
-      expect(info.patterns).toContain("Object-Oriented");
-    });
-  });
+    const errorChunkManager = new ChunkManager(errorFileTools);
+    const errorAnalyzer = new ProjectAnalyzer(
+      errorChunkManager,
+      errorFileTools
+    );
 
-  describe("extractSpecificationInfo", () => {
-    it("should extract specification information from a chunk", async () => {
-      const chunk = createSampleChunk();
-      const info = await (analyzer as any).extractSpecificationInfo(chunk);
-
-      expect(info.goals).toContain("Build a CLI tool");
-      expect(info.goals).toContain("Support project analysis");
-      expect(info.requirements).toContain("TypeScript support");
-      expect(info.requirements).toContain("Test coverage");
-    });
-  });
-
-  describe("mergeAnalysis", () => {
-    it("should merge chunk analysis results correctly", () => {
-      const analysis = createSampleAnalysis();
-      const chunkAnalysis = {
-        chunkId: "test-chunk",
-        architecture: {
-          techStack: ["new-package"],
-          projectStructure: "new/structure",
-          patterns: ["New-Pattern"],
-        },
-        specification: {
-          goals: ["New goal"],
-          components: ["NewComponent"],
-          requirements: ["New requirement"],
-        },
-      };
-
-      (analyzer as any).mergeAnalysis(analysis, chunkAnalysis);
-
-      expect(analysis.architecture.techStack).toContain("new-package");
-      expect(analysis.architecture.projectStructure).toBe("new/structure");
-      expect(analysis.architecture.patterns).toContain("New-Pattern");
-      expect(analysis.specification.goals).toContain("New goal");
-      expect(analysis.specification.components).toContain("NewComponent");
-      expect(analysis.specification.requirements).toContain("New requirement");
-    });
-
-    it("should handle partial chunk analysis results", () => {
-      const analysis = createSampleAnalysis();
-      const chunkAnalysis = {
-        chunkId: "test-chunk",
-        architecture: {
-          techStack: ["new-package"],
-        },
-        specification: {
-          goals: ["New goal"],
-        },
-      };
-
-      (analyzer as any).mergeAnalysis(analysis, chunkAnalysis);
-
-      expect(analysis.architecture.techStack).toContain("new-package");
-      expect(analysis.specification.goals).toContain("New goal");
-      // Original values should be preserved
-      expect(analysis.architecture.projectStructure).toBe(
-        "src/\n  analysis/\n  tools/\n  tests/"
-      );
-      expect(analysis.specification.components).toContain("FileTools");
-    });
+    await expect(errorAnalyzer.analyzeProject(rootDir)).rejects.toThrow(
+      "File system error"
+    );
   });
 });

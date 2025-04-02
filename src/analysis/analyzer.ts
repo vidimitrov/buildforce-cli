@@ -1,17 +1,22 @@
 import {
   AnalysisChunk,
-  ProjectAnalysis,
+  ProjectAnalysis as AnalysisProjectAnalysis,
   ChunkAnalysisResult,
   AnalysisError,
   AnalysisSystemError,
 } from "./types";
 import { ChunkManager } from "./chunk";
 import { FileTools } from "../tools/file/types";
+import {
+  ProjectAnalyzer as CoreProjectAnalyzer,
+  ProjectAnalysis as CoreProjectAnalysis,
+} from "../types/project";
+import { ProjectAnalysisAdapter } from "./adapter";
 
 /**
  * Main class responsible for analyzing project files and generating architecture and specification information
  */
-export class ProjectAnalyzer {
+export class ProjectAnalyzer implements CoreProjectAnalyzer {
   constructor(
     private readonly chunkManager: ChunkManager,
     private readonly fileTools: FileTools
@@ -20,8 +25,74 @@ export class ProjectAnalyzer {
   /**
    * Analyzes the entire project and generates architecture and specification information
    */
-  public async analyzeProject(): Promise<ProjectAnalysis> {
-    const analysis: ProjectAnalysis = {
+  public async analyzeProject(rootDir: string): Promise<CoreProjectAnalysis> {
+    const analysis = await this.analyzeProjectInternal();
+    const projectName = this.extractProjectName(rootDir);
+
+    // Get all files and directories
+    const files = await this.fileTools.searchFiles("*");
+    const directories = new Set<string>();
+    files.forEach((file) => {
+      const dir = file.split("/").slice(0, -1).join("/");
+      if (dir) directories.add(dir);
+    });
+
+    // Extract build tools and test frameworks from package.json
+    const buildTools: string[] = [];
+    const testFrameworks: string[] = [];
+    const packageJsonPath = `${rootDir}/package.json`;
+
+    try {
+      if (await this.fileTools.exists(packageJsonPath)) {
+        const packageJson = JSON.parse(
+          await this.fileTools.readFile(packageJsonPath)
+        );
+        const devDeps = packageJson.devDependencies || {};
+
+        // Common build tools
+        if (devDeps["webpack"]) buildTools.push("webpack");
+        if (devDeps["rollup"]) buildTools.push("rollup");
+        if (devDeps["parcel"]) buildTools.push("parcel");
+        if (devDeps["esbuild"]) buildTools.push("esbuild");
+        if (devDeps["vite"]) buildTools.push("vite");
+
+        // Common test frameworks
+        if (devDeps["jest"]) testFrameworks.push("jest");
+        if (devDeps["mocha"]) testFrameworks.push("mocha");
+        if (devDeps["jasmine"]) testFrameworks.push("jasmine");
+        if (devDeps["vitest"]) testFrameworks.push("vitest");
+        if (devDeps["ava"]) testFrameworks.push("ava");
+      }
+    } catch (error) {
+      console.error("Error parsing package.json:", error);
+    }
+
+    const analysisResult = ProjectAnalysisAdapter.toCoreAnalysis(
+      analysis,
+      projectName
+    );
+
+    // Update with the additional information
+    analysisResult.structure.files = files;
+    analysisResult.structure.directories = Array.from(directories);
+    analysisResult.buildTools = buildTools;
+    analysisResult.testFrameworks = testFrameworks;
+
+    return analysisResult;
+  }
+
+  /**
+   * Extracts the project name from the root directory
+   */
+  private extractProjectName(rootDir: string): string {
+    return rootDir.split("/").pop() || "unknown";
+  }
+
+  /**
+   * Internal method that performs the actual analysis
+   */
+  private async analyzeProjectInternal(): Promise<AnalysisProjectAnalysis> {
+    const analysis: AnalysisProjectAnalysis = {
       architecture: {
         techStack: [],
         projectStructure: "",
@@ -46,34 +117,31 @@ export class ProjectAnalyzer {
     }
 
     // Create a single chunk with all files
-    const chunk = await this.chunkManager.createChunk(files);
+    const chunk: AnalysisChunk = {
+      id: "main",
+      files,
+      content: await Promise.all(
+        files.map(async (file) => {
+          const content = await this.fileTools.readFile(file);
+          return `=== ${file} ===\n${content}\n=== end ${file} ===`;
+        })
+      ).then((contents) => contents.join("\n")),
+      dependencies: [], // We'll extract dependencies during analysis
+      relevance: 1.0, // Main chunk has highest relevance
+    };
     console.log("Created chunk:", chunk.id);
 
-    // Prioritize chunks for analysis
-    const prioritizedChunks = await this.chunkManager.prioritizeChunks([chunk]);
-    console.log("Prioritized chunks:", prioritizedChunks.length);
-
-    if (prioritizedChunks.length === 0) {
-      throw new AnalysisSystemError(
-        AnalysisError.ANALYSIS_ERROR,
-        "No valid chunks to analyze"
-      );
-    }
-
-    // Analyze each chunk
-    for (const chunk of prioritizedChunks) {
-      console.log("Analyzing chunk:", chunk.id);
-      try {
-        const chunkAnalysis = await this.analyzeChunk(chunk);
-        this.mergeAnalysis(analysis, chunkAnalysis);
-      } catch (error) {
-        errors.push(error as Error);
-        console.error(`Failed to analyze chunk ${chunk.id}:`, error);
-      }
+    // Analyze the chunk
+    console.log("Analyzing chunk:", chunk.id);
+    try {
+      const chunkAnalysis = await this.analyzeChunk(chunk);
+      this.mergeAnalysis(analysis, chunkAnalysis);
+    } catch (error) {
+      errors.push(error as Error);
+      console.error(`Failed to analyze chunk ${chunk.id}:`, error);
     }
 
     // Check if we have any meaningful information
-    const hasValidChunks = prioritizedChunks.length > 0;
     const hasArchitectureInfo =
       analysis.architecture.techStack.length > 0 ||
       analysis.architecture.projectStructure.length > 0 ||
@@ -84,7 +152,6 @@ export class ProjectAnalyzer {
       analysis.specification.requirements.length > 0;
 
     console.log("Analysis result:", {
-      hasValidChunks,
       hasArchitectureInfo,
       hasSpecificationInfo,
       analysis: JSON.stringify(analysis, null, 2),
@@ -134,8 +201,8 @@ export class ProjectAnalyzer {
    */
   private async extractArchitectureInfo(
     chunk: AnalysisChunk
-  ): Promise<ProjectAnalysis["architecture"]> {
-    const info: ProjectAnalysis["architecture"] = {
+  ): Promise<AnalysisProjectAnalysis["architecture"]> {
+    const info: AnalysisProjectAnalysis["architecture"] = {
       techStack: [],
       projectStructure: "",
       patterns: [],
@@ -244,8 +311,8 @@ export class ProjectAnalyzer {
    */
   private async extractSpecificationInfo(
     chunk: AnalysisChunk
-  ): Promise<ProjectAnalysis["specification"]> {
-    const info: ProjectAnalysis["specification"] = {
+  ): Promise<AnalysisProjectAnalysis["specification"]> {
+    const info: AnalysisProjectAnalysis["specification"] = {
       goals: [],
       components: [],
       requirements: [],
@@ -345,7 +412,7 @@ export class ProjectAnalyzer {
    * Merges chunk analysis results into the main analysis
    */
   private mergeAnalysis(
-    analysis: ProjectAnalysis,
+    analysis: AnalysisProjectAnalysis,
     chunkAnalysis: ChunkAnalysisResult
   ): void {
     try {

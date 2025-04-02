@@ -1,0 +1,131 @@
+# Task <%= it.number %>: <%= it.name %>
+
+## Architecture context
+
+<%= it.architectureContext %>
+
+## Specification context
+
+<%= it.specificationContext %>
+
+## RULES
+
+<%= it.rules %>
+
+## Sub-Tasks & Progress Tracking
+
+<% it.subTasks.forEach(function(task) { %>
+- [ ] <%= task.name %> <%= task.description %>
+<% }) %>
+
+## Overview
+
+<%= it.overview %>
+
+## Implementation Plan
+
+<% if (it.backendImplementation) { %>
+### BACK-END IMPLEMENTATION
+
+1. Schema Updates:
+
+```prisma
+<%= it.backendImplementation.schema %>
+```
+
+2. API Implementation:
+
+   a. GraphQL Schema Updates:
+
+   ```graphql
+   <%= it.backendImplementation.graphqlSchema %>
+   ```
+
+   b. Resolver Implementation:
+
+   <% it.backendImplementation.resolvers.forEach(function(resolver) { %>
+   - <%= resolver %>
+   <% }) %>
+
+3. Services Layer:
+
+   <% it.backendImplementation.services.forEach(function(service) { %>
+   - <%= service %>
+   <% }) %>
+
+4. Database Migration:
+   <% it.backendImplementation.migrations.forEach(function(migration) { %>
+   - <%= migration %>
+   <% }) %>
+<% } %>
+
+<% if (it.frontendImplementation) { %>
+### FRONT-END IMPLEMENTATION
+
+1. GraphQL Integration:
+
+   <% it.frontendImplementation.graphql.forEach(function(item) { %>
+   - <%= item %>
+   <% }) %>
+
+2. Components Structure:
+
+   ```
+   <%= it.frontendImplementation.components %>
+   ```
+
+3. State Management:
+
+   <% it.frontendImplementation.state.forEach(function(item) { %>
+   - <%= item %>
+   <% }) %>
+
+4. Features Implementation:
+
+   <% it.frontendImplementation.features.forEach(function(feature) { %>
+   - <%= feature %>
+   <% }) %>
+
+5. UI Components:
+   <% it.frontendImplementation.uiComponents.forEach(function(component) { %>
+   - <%= component %>
+   <% }) %>
+<% } %>
+
+## Data Models
+
+```typescript
+<%= it.dataModels %>
+```
+
+## UI/UX Considerations
+
+1. User Interface:
+
+   <% it.ui.forEach(function(item) { %>
+   - <%= item %>
+   <% }) %>
+
+2. User Experience:
+
+   <% it.ux.forEach(function(item) { %>
+   - <%= item %>
+   <% }) %>
+
+3. Accessibility:
+   <% it.accessibility.forEach(function(item) { %>
+   - <%= item %>
+   <% }) %>
+
+## Testing / Verification Steps
+
+1. Back-end:
+
+   <% it.testing.backend.forEach(function(test) { %>
+   - <%= test %>
+   <% }) %>
+
+2. Front-end:
+   <% it.testing.frontend.forEach(function(test) { %>
+   - <%= test %>
+   <% }) %> 

@@ -31,6 +31,29 @@ The Buildforce CLI aims to provide a command-line interface for accessing and ut
    - AI tools rule file setup and configuration
    - Session state management
 
+### Automatic Onboarding System
+
+The automatic onboarding system is a key component that streamlines project initialization and documentation generation. It provides:
+
+1. **Project Analysis**:
+
+   - Automated scanning of project structure
+   - Intelligent analysis of dependencies and configurations
+   - Smart prioritization of documentation files
+
+2. **Documentation Generation**:
+
+   - Automatic creation of architecture.md and specification.md
+   - Dynamic content generation using Eta templates
+   - Support for manual review and refinement
+
+3. **User Experience**:
+   - Clear progress indicators
+   - Comprehensive error handling
+   - Configurable analysis options
+
+The system is designed to reduce manual effort in project setup while ensuring high-quality documentation output.
+
 ## Considerations
 
 ### Technical Requirements

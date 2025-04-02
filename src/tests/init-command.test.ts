@@ -1,8 +1,19 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { InitCommand } from "../commands/init";
+import { InitCommand } from "../commands/init/index";
 import { ProjectAnalyzer, FileTools } from "../types/project";
+import { InitAgent } from "../agents/init";
+import { isBuildforceInitialized } from "../services/filesystem";
+import { promptForOpenRouterConfig, updateEnvFile } from "../services/config";
+import { setupAITools } from "../commands/init/ai-tools";
+import { copyBuildforceTemplate } from "../commands/init/templates";
+
+jest.mock("../agents/init");
+jest.mock("../services/filesystem");
+jest.mock("../services/config");
+jest.mock("../commands/init/ai-tools");
+jest.mock("../commands/init/templates");
 
 describe("InitCommand Integration", () => {
   let testDir: string;
@@ -11,6 +22,7 @@ describe("InitCommand Integration", () => {
   let command: InitCommand;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     testDir = createTempTestDir();
 
     mockAnalyzer = {
@@ -23,6 +35,15 @@ describe("InitCommand Integration", () => {
       exists: jest.fn(),
       mkdir: jest.fn(),
     } as any;
+
+    (isBuildforceInitialized as jest.Mock).mockReturnValue(false);
+    (promptForOpenRouterConfig as jest.Mock).mockResolvedValue({
+      apiKey: "test-key",
+      model: "test-model",
+    });
+    (setupAITools as jest.Mock).mockResolvedValue(["test-tool"]);
+    (copyBuildforceTemplate as jest.Mock).mockResolvedValue(undefined);
+    (updateEnvFile as jest.Mock).mockResolvedValue(undefined);
 
     command = new InitCommand(mockAnalyzer, mockFileTools);
   });
@@ -54,6 +75,20 @@ describe("InitCommand Integration", () => {
     mockFileTools.exists.mockResolvedValue(true);
     mockFileTools.readFile.mockResolvedValue("# Generated Documentation");
 
+    // Mock InitAgent to succeed
+    const mockInitAgent = {
+      execute: jest.fn().mockResolvedValue({
+        success: true,
+        documentation: {
+          architecture: "architecture content",
+          specification: "specification content",
+        },
+        warnings: [],
+        errors: [],
+      }),
+    };
+    (InitAgent as jest.Mock).mockImplementation(() => mockInitAgent);
+
     // Execute
     await command.execute("test-project", {});
 
@@ -69,22 +104,7 @@ describe("InitCommand Integration", () => {
   it("should detect existing buildforce initialization", async () => {
     // Setup - first initialization
     initBuildforce(testDir);
-    expect(isBuildforceInitialized(testDir)).toBe(true);
-
-    // Mock analyzer response
-    mockAnalyzer.analyzeProject.mockResolvedValue({
-      name: "test-project",
-      description: "Test project",
-      dependencies: [],
-      structure: { files: [], directories: [] },
-      type: "node",
-      frameworks: [],
-      buildTools: [],
-      testFrameworks: [],
-    });
-
-    mockFileTools.exists.mockResolvedValue(true);
-    mockFileTools.readFile.mockResolvedValue("# Generated Documentation");
+    (isBuildforceInitialized as jest.Mock).mockReturnValue(true);
 
     // Execute - attempt re-initialization
     await command.execute("test-project", { force: false });
@@ -95,12 +115,23 @@ describe("InitCommand Integration", () => {
   });
 
   it("should handle initialization failures gracefully", async () => {
-    // Mock analyzer to fail
-    mockAnalyzer.analyzeProject.mockRejectedValue(new Error("Analysis failed"));
+    // Mock InitAgent to fail
+    const mockInitAgent = {
+      execute: jest.fn().mockResolvedValue({
+        success: false,
+        documentation: {
+          architecture: "",
+          specification: "",
+        },
+        warnings: [],
+        errors: ["Analysis failed"],
+      }),
+    };
+    (InitAgent as jest.Mock).mockImplementation(() => mockInitAgent);
 
     // Execute and expect error
     await expect(command.execute("test-project", {})).rejects.toThrow(
-      "Failed to analyze project"
+      "Failed to initialize project"
     );
   });
 });
@@ -176,16 +207,6 @@ const initBuildforce = (targetDir: string): boolean => {
     console.error("Error initializing buildforce:", error);
     return false;
   }
-};
-
-/**
- * Checks if the buildforce folder exists in the specified directory
- * @param dir Directory to check
- * @returns boolean indicating if the project is initialized
- */
-const isBuildforceInitialized = (dir: string): boolean => {
-  const buildforceDir = path.join(dir, "buildforce");
-  return fs.existsSync(buildforceDir);
 };
 
 /**

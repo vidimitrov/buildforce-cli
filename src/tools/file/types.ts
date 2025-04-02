@@ -24,6 +24,20 @@ export interface FileTools {
    * @returns Promise resolving when write is complete
    */
   writeFile(path: string, content: string): Promise<void>;
+
+  /**
+   * Check if a file or directory exists
+   * @param path Path to check
+   * @returns Promise resolving to true if the path exists
+   */
+  exists(path: string): Promise<boolean>;
+
+  /**
+   * Create a directory
+   * @param path Path to create
+   * @returns Promise resolving when directory is created
+   */
+  mkdir(path: string): Promise<void>;
 }
 
 export interface ProjectUtils {

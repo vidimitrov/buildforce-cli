@@ -1,0 +1,39 @@
+# Architecture
+
+## Overview
+
+<%= it.description || "A project that needs to be analyzed and documented." %>
+
+## Tech Stack
+
+<% it.frameworks.forEach(function(framework) { %>
+### <%= framework %> Tech Stack
+
+- **Framework**: <%= framework %>
+- **Runtime**: <%= it.runtime || "Node.js" %>
+- **Language**: <%= it.language || "TypeScript" %>
+- **Testing**: <%= it.testFrameworks.join(", ") || "Not specified" %>
+- **Other Key Technologies**:
+  <% it.dependencies.forEach(function(dep) { %>
+  - <%= dep %>
+  <% }) %>
+<% }) %>
+
+## Build and Dependency Management
+
+The project uses the following build and dependency management tools:
+<% it.buildTools.forEach(function(tool) { %>
+- <%= tool %>
+<% }) %>
+
+Project dependencies are managed through package.json:
+<% it.dependencies.forEach(function(dep) { %>
+- <%= dep %>
+<% }) %>
+
+## Project Structure
+
+The project follows a standard Node.js/TypeScript structure:
+<% it.structure.directories.forEach(function(dir) { %>
+- <%= dir %>
+<% }) %> 

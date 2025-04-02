@@ -10,6 +10,14 @@ export interface ProjectAnalysis {
   frameworks: string[];
   buildTools: string[];
   testFrameworks: string[];
+  runtime?: string;
+  language?: string;
+  architecture?: string;
+  features?: string[];
+  integrationPoints?: string[];
+  considerations?: string[];
+  futureExpansions?: string[];
+  integrationCapabilities?: string[];
 }
 
 export interface ProjectAnalyzer {
@@ -21,4 +29,5 @@ export interface FileTools {
   writeFile(path: string, content: string): Promise<void>;
   exists(path: string): Promise<boolean>;
   mkdir(path: string): Promise<void>;
+  searchFiles(pattern: string): Promise<string[]>;
 }

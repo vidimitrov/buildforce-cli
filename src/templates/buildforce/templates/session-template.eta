@@ -1,0 +1,36 @@
+# Session <%= it.number %>: <%= it.name %>
+
+## Objective
+
+<%= it.objective %>
+
+## Decisions
+
+TLDR: <%= it.decisions.summary %>
+
+<% it.decisions.items.forEach(function(decision) { %>
+- <%= decision %>
+<% }) %>
+
+## Tasks
+
+<% it.tasks.forEach(function(task, index) { %>
+- [ ] <%= index + 1 %>. <%= task.name %>
+<% }) %>
+
+## Expected Outcome
+
+<% it.expectedOutcomes.forEach(function(outcome) { %>
+- <%= outcome %>
+<% }) %>
+
+## Verification / Testing Steps
+
+<% it.verificationSteps.forEach(function(step, index) { %>
+<%= index + 1 %>. <%= step.name %>:
+
+  <% step.details.forEach(function(detail) { %>
+  - <%= detail %>
+  <% }) %>
+
+<% }) %> 

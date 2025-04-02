@@ -1,6 +1,13 @@
 import { Command } from "commander";
-import { InitAgent, InitAgentConfig } from "../agents/init";
-import { ProjectAnalyzer, FileTools } from "../types/project";
+import { InitAgent, InitAgentConfig } from "../../agents/init";
+import { setupAITools } from "./ai-tools";
+import { copyBuildforceTemplate } from "./templates";
+import {
+  promptForOpenRouterConfig,
+  updateEnvFile,
+} from "../../services/config";
+import { isBuildforceInitialized } from "../../services/filesystem";
+import { ProjectAnalyzer, FileTools } from "../../types/project";
 
 export class InitCommand {
   constructor(
@@ -26,7 +33,32 @@ export class InitCommand {
     options: Record<string, boolean>
   ): Promise<void> {
     try {
-      const config: InitAgentConfig = {
+      // Check if project is already initialized
+      if (isBuildforceInitialized()) {
+        console.log(`Project ${projectName} is already initialized.`);
+        return;
+      }
+
+      console.log(`Initializing project ${projectName}...`);
+
+      // Get OpenRouter configuration if needed
+      const config = await promptForOpenRouterConfig();
+      let configUpdated = false;
+
+      // Ask which AI tools the user uses
+      const aiToolsSelection = await setupAITools();
+
+      // Copy templates and setup rules
+      await copyBuildforceTemplate(process.cwd(), aiToolsSelection);
+
+      // Update environment configuration only if we prompted for it
+      if (!config.apiKey || !config.model) {
+        await updateEnvFile(config.apiKey, config.model);
+        configUpdated = true;
+      }
+
+      // Initialize the agent with configuration
+      const agentConfig: InitAgentConfig = {
         projectName: projectName || process.cwd().split("/").pop() || "unknown",
         rootDir: process.cwd(),
         options: {
@@ -36,29 +68,27 @@ export class InitCommand {
         },
       };
 
-      const agent = new InitAgent(config, {
+      const agent = new InitAgent(agentConfig, {
         analyzer: this.analyzer,
         fileTools: this.fileTools,
       });
 
+      // Execute the agent
       const result = await agent.execute();
 
       if (result.success) {
-        console.log("✅ Project analyzed successfully");
+        console.log("Project initialized successfully");
         if (result.warnings.length > 0) {
-          console.log("\n⚠️ Warnings:");
+          console.log("\nWarnings:");
           result.warnings.forEach((warning) => console.log(`  - ${warning}`));
         }
-        console.log("\n📚 Generated documentation:");
-        console.log(`  - Architecture: ${result.documentation.architecture}`);
-        console.log(`  - Specification: ${result.documentation.specification}`);
       } else {
-        console.error("❌ Failed to analyze project");
+        console.error("Failed to initialize project");
         if (result.errors.length > 0) {
           console.error("\nErrors:");
           result.errors.forEach((error) => console.error(`  - ${error}`));
         }
-        throw new Error("Failed to analyze project");
+        throw new Error("Failed to initialize project");
       }
     } catch (error) {
       console.error("❌ An unexpected error occurred:", error);

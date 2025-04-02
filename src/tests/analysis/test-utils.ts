@@ -51,6 +51,16 @@ export class MockFileTools implements FileTools {
   async writeFile(path: string, content: string): Promise<void> {
     this.files.set(path, content);
   }
+
+  async exists(path: string): Promise<boolean> {
+    return this.files.has(path);
+  }
+
+  async mkdir(path: string): Promise<void> {
+    // In our mock implementation, we'll just track that the directory exists
+    // by adding it with empty content
+    this.files.set(path, "");
+  }
 }
 
 /**

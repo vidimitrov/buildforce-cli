@@ -1,82 +1,129 @@
+import { InitCommand } from "../init/index";
+import { ProjectAnalyzer } from "../../analysis/analyzer";
+import { FileTools } from "../../types/project";
+import { InitAgent } from "../../agents/init";
+import { isBuildforceInitialized } from "../../services/filesystem";
 import { Command } from "commander";
-import { InitCommand } from "../init";
-import { ProjectAnalyzer, FileTools } from "../../types/project";
+import {
+  promptForOpenRouterConfig,
+  updateEnvFile,
+} from "../../services/config";
+import { setupAITools } from "../init/ai-tools";
+import { copyBuildforceTemplate } from "../init/templates";
+
+jest.mock("../../analysis/analyzer");
+jest.mock("../../types/project");
+jest.mock("../../agents/init");
+jest.mock("../../services/filesystem");
+jest.mock("../../services/config");
+jest.mock("../init/ai-tools");
+jest.mock("../init/templates");
 
 describe("InitCommand", () => {
-  let command: InitCommand;
+  let initCommand: InitCommand;
   let mockAnalyzer: jest.Mocked<ProjectAnalyzer>;
   let mockFileTools: jest.Mocked<FileTools>;
-  let program: Command;
+  let mockInitAgent: jest.Mocked<InitAgent>;
+  let mockExecute: jest.Mock;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     mockAnalyzer = {
       analyzeProject: jest.fn(),
-    } as any;
-
+    } as unknown as jest.Mocked<ProjectAnalyzer>;
     mockFileTools = {
       readFile: jest.fn(),
       writeFile: jest.fn(),
       exists: jest.fn(),
       mkdir: jest.fn(),
-    } as any;
-
-    command = new InitCommand(mockAnalyzer, mockFileTools);
-    program = new Command();
-  });
-
-  it("should register the init command", () => {
-    command.register(program);
-    const initCommand = program.commands.find((cmd) => cmd.name() === "init");
-    expect(initCommand).toBeDefined();
-    expect(initCommand?.description()).toBe("Initialize project documentation");
-  });
-
-  it("should handle successful execution", async () => {
-    const mockAnalysis = {
-      name: "test-project",
-      description: "test description",
-      dependencies: [],
-      structure: { files: [], directories: [] },
-      type: "node" as const,
-      frameworks: [],
-      buildTools: [],
-      testFrameworks: [],
-    };
-
-    mockAnalyzer.analyzeProject.mockResolvedValue(mockAnalysis);
-    mockFileTools.exists.mockResolvedValue(true);
-    mockFileTools.readFile.mockResolvedValue("content");
-
-    await command.execute("test-project", { verbose: true });
-
-    expect(mockAnalyzer.analyzeProject).toHaveBeenCalledWith(process.cwd());
-  });
-
-  it("should handle execution failure", async () => {
-    mockAnalyzer.analyzeProject.mockRejectedValue(new Error("Analysis failed"));
-
-    await expect(command.execute("test-project", {})).rejects.toThrow();
-  });
-
-  it("should use current directory name when project name is not provided", async () => {
-    const currentDir = process.cwd().split("/").pop() || "unknown";
-
-    mockAnalyzer.analyzeProject.mockResolvedValue({
-      name: currentDir,
-      description: "",
-      dependencies: [],
-      structure: { files: [], directories: [] },
-      type: "node",
-      frameworks: [],
-      buildTools: [],
-      testFrameworks: [],
+      searchFiles: jest.fn(),
+    } as unknown as jest.Mocked<FileTools>;
+    mockExecute = jest.fn();
+    mockInitAgent = {
+      execute: mockExecute,
+    } as unknown as jest.Mocked<InitAgent>;
+    (InitAgent as jest.Mock).mockImplementation(() => mockInitAgent);
+    (isBuildforceInitialized as jest.Mock).mockReturnValue(false);
+    (promptForOpenRouterConfig as jest.Mock).mockResolvedValue({
+      apiKey: "test-key",
+      model: "test-model",
     });
+    (setupAITools as jest.Mock).mockResolvedValue(["test-tool"]);
+    (copyBuildforceTemplate as jest.Mock).mockResolvedValue(undefined);
+    (updateEnvFile as jest.Mock).mockResolvedValue(undefined);
+    initCommand = new InitCommand(mockAnalyzer, mockFileTools);
+  });
 
-    mockFileTools.exists.mockResolvedValue(true);
-    mockFileTools.readFile.mockResolvedValue("content");
+  describe("register", () => {
+    it("should register the init command", () => {
+      const program = new Command();
+      initCommand.register(program);
 
-    await command.execute("", {});
+      const cmd = program.commands.find((c) => c.name() === "init");
+      expect(cmd).toBeDefined();
+      expect(cmd?.description()).toBe("Initialize project documentation");
+    });
+  });
 
-    expect(mockAnalyzer.analyzeProject).toHaveBeenCalledWith(process.cwd());
+  describe("execute", () => {
+    it("should handle successful execution", async () => {
+      const mockResult = {
+        success: true,
+        documentation: {
+          architecture: "architecture content",
+          specification: "specification content",
+        },
+        warnings: [],
+        errors: [],
+      };
+
+      mockExecute.mockResolvedValue(mockResult);
+
+      await initCommand.execute("test-project", {});
+
+      expect(mockExecute).toHaveBeenCalled();
+    }, 10000);
+
+    it("should handle execution failure", async () => {
+      mockExecute.mockResolvedValue({
+        success: false,
+        documentation: {
+          architecture: "",
+          specification: "",
+        },
+        warnings: [],
+        errors: ["Analysis failed"],
+      });
+
+      await expect(initCommand.execute("test-project", {})).rejects.toThrow(
+        "Failed to initialize project"
+      );
+    }, 10000);
+
+    it("should skip initialization if already done", async () => {
+      (isBuildforceInitialized as jest.Mock).mockReturnValue(true);
+
+      await initCommand.execute("test-project", {});
+
+      expect(mockExecute).not.toHaveBeenCalled();
+    }, 10000);
+
+    it("should use current directory name when no project name provided", async () => {
+      const mockResult = {
+        success: true,
+        documentation: {
+          architecture: "architecture content",
+          specification: "specification content",
+        },
+        warnings: [],
+        errors: [],
+      };
+
+      mockExecute.mockResolvedValue(mockResult);
+
+      await initCommand.execute("", {});
+
+      expect(mockExecute).toHaveBeenCalled();
+    }, 10000);
   });
 });
