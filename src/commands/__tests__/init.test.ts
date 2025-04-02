@@ -1,6 +1,6 @@
 import { InitCommand } from "../init/index";
-import { ProjectAnalyzer } from "../../analysis/analyzer";
-import { FileTools } from "../../types/project";
+import { ProjectAnalyzer, FileTools } from "../../types/project";
+import { ProjectUtils } from "../../tools/file/types";
 import { InitAgent } from "../../agents/init";
 import { isBuildforceInitialized } from "../../services/filesystem";
 import { Command } from "commander";
@@ -23,6 +23,7 @@ describe("InitCommand", () => {
   let initCommand: InitCommand;
   let mockAnalyzer: jest.Mocked<ProjectAnalyzer>;
   let mockFileTools: jest.Mocked<FileTools>;
+  let mockProjectUtils: jest.Mocked<ProjectUtils>;
   let mockInitAgent: jest.Mocked<InitAgent>;
   let mockExecute: jest.Mock;
 
@@ -30,14 +31,17 @@ describe("InitCommand", () => {
     jest.clearAllMocks();
     mockAnalyzer = {
       analyzeProject: jest.fn(),
-    } as unknown as jest.Mocked<ProjectAnalyzer>;
+    } as any;
     mockFileTools = {
       readFile: jest.fn(),
       writeFile: jest.fn(),
       exists: jest.fn(),
       mkdir: jest.fn(),
       searchFiles: jest.fn(),
-    } as unknown as jest.Mocked<FileTools>;
+    } as any;
+    mockProjectUtils = {
+      listDirectory: jest.fn(),
+    } as any;
     mockExecute = jest.fn();
     mockInitAgent = {
       execute: mockExecute,
@@ -51,7 +55,11 @@ describe("InitCommand", () => {
     (setupAITools as jest.Mock).mockResolvedValue(["test-tool"]);
     (copyBuildforceTemplate as jest.Mock).mockResolvedValue(undefined);
     (updateEnvFile as jest.Mock).mockResolvedValue(undefined);
-    initCommand = new InitCommand(mockAnalyzer, mockFileTools);
+    initCommand = new InitCommand(
+      mockAnalyzer,
+      mockFileTools,
+      mockProjectUtils
+    );
   });
 
   describe("register", () => {

@@ -28,7 +28,11 @@ export class FileToolsImpl implements FileTools {
   async searchFiles(pattern: string): Promise<string[]> {
     try {
       const fullPattern = this.resolvePath(pattern);
-      return globSync(fullPattern);
+      return globSync(fullPattern, {
+        ignore: ["node_modules/**", "dist/**"],
+        nodir: false,
+        absolute: true,
+      });
     } catch (error) {
       throw new FileOperationError(`Failed to search files: ${pattern}`, error);
     }
@@ -46,8 +50,8 @@ export class FileToolsImpl implements FileTools {
   async exists(path: string): Promise<boolean> {
     try {
       const fullPath = this.resolvePath(path);
-      await fs.access(fullPath);
-      return true;
+      const stats = await fs.stat(fullPath);
+      return stats.isFile();
     } catch (error) {
       return false;
     }
@@ -80,7 +84,26 @@ export class ProjectUtilsImpl implements ProjectUtils {
   async listDirectory(path: string): Promise<string[]> {
     try {
       const fullPath = this.resolvePath(path);
-      return await fs.readdir(fullPath);
+      const files = await fs.readdir(fullPath, { withFileTypes: true });
+      const filePaths: string[] = [];
+
+      for (const file of files) {
+        const fullFilePath = join(fullPath, file.name);
+
+        if (file.isDirectory()) {
+          // Skip node_modules and other special directories
+          if (file.name === "node_modules" || file.name === ".git") {
+            continue;
+          }
+          // Recursively get files from subdirectories
+          const subFiles = await this.listDirectory(fullFilePath);
+          filePaths.push(...subFiles);
+        } else {
+          filePaths.push(fullFilePath);
+        }
+      }
+
+      return filePaths;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         throw new DirectoryNotFoundError(path);

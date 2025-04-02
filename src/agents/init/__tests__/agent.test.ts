@@ -1,22 +1,22 @@
 import { InitAgent } from "../agent";
 import { ProjectAnalyzer, FileTools } from "../../../types/project";
+import { ProjectUtils } from "../../../tools/file/types";
+import { InitAgentConfig } from "../types";
 
 describe("InitAgent", () => {
   let agent: InitAgent;
+  let mockConfig: InitAgentConfig;
   let mockAnalyzer: jest.Mocked<ProjectAnalyzer>;
   let mockFileTools: jest.Mocked<FileTools>;
-
-  const mockConfig = {
-    projectName: "test-project",
-    rootDir: "/test/dir",
-    options: {
-      skipAnalysis: false,
-      force: false,
-      verbose: false,
-    },
-  };
+  let mockProjectUtils: jest.Mocked<ProjectUtils>;
 
   beforeEach(() => {
+    mockConfig = {
+      projectName: "test-project",
+      rootDir: "/test/project",
+      options: {},
+    };
+
     mockAnalyzer = {
       analyzeProject: jest.fn(),
     } as any;
@@ -28,10 +28,16 @@ describe("InitAgent", () => {
       mkdir: jest.fn(),
     } as any;
 
-    agent = new InitAgent(mockConfig, {
-      analyzer: mockAnalyzer,
-      fileTools: mockFileTools,
-    });
+    mockProjectUtils = {
+      listDirectory: jest.fn(),
+    } as any;
+
+    agent = new InitAgent(
+      mockConfig,
+      mockAnalyzer,
+      mockFileTools,
+      mockProjectUtils
+    );
   });
 
   it("should analyze project and generate documentation", async () => {
@@ -65,15 +71,17 @@ describe("InitAgent", () => {
   });
 
   it("should skip analysis when configured", async () => {
-    const configWithSkip = {
+    const configWithSkip: InitAgentConfig = {
       ...mockConfig,
-      options: { ...mockConfig.options, skipAnalysis: true },
+      options: { skipAnalysis: true },
     };
 
-    agent = new InitAgent(configWithSkip, {
-      analyzer: mockAnalyzer,
-      fileTools: mockFileTools,
-    });
+    agent = new InitAgent(
+      configWithSkip,
+      mockAnalyzer,
+      mockFileTools,
+      mockProjectUtils
+    );
 
     mockFileTools.exists.mockResolvedValue(true);
     mockFileTools.readFile.mockResolvedValue("content");

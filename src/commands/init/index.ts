@@ -8,11 +8,13 @@ import {
 } from "../../services/config";
 import { isBuildforceInitialized } from "../../services/filesystem";
 import { ProjectAnalyzer, FileTools } from "../../types/project";
+import { ProjectUtils } from "../../tools/file/types";
 
 export class InitCommand {
   constructor(
     private analyzer: ProjectAnalyzer,
-    private fileTools: FileTools
+    private fileTools: FileTools,
+    private projectUtils: ProjectUtils
   ) {}
 
   register(program: Command): void {
@@ -23,6 +25,7 @@ export class InitCommand {
       .option("-s, --skip-analysis", "Skip project analysis")
       .option("-f, --force", "Force overwrite existing documentation")
       .option("-v, --verbose", "Enable verbose output")
+      .option("--dev-mode", "Enable development mode with detailed logging")
       .action(async (projectName: string, options: Record<string, boolean>) => {
         await this.execute(projectName, options);
       });
@@ -65,13 +68,16 @@ export class InitCommand {
           skipAnalysis: options.skipAnalysis,
           force: options.force,
           verbose: options.verbose,
+          devMode: options.devMode,
         },
       };
 
-      const agent = new InitAgent(agentConfig, {
-        analyzer: this.analyzer,
-        fileTools: this.fileTools,
-      });
+      const agent = new InitAgent(
+        agentConfig,
+        this.analyzer,
+        this.fileTools,
+        this.projectUtils
+      );
 
       // Execute the agent
       const result = await agent.execute();

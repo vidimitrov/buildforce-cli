@@ -4,42 +4,63 @@
 
 <%= it.name %>
 
-## Goal
+## Overview
 
 <%= it.description || "A project that needs to be analyzed and documented." %>
+
+## Project Type
+- **Type**: <%= it.type %>
+- **Build Tools**: <%= it.buildTools.join(", ") || "Not specified" %>
+- **Test Frameworks**: <%= it.testFrameworks.join(", ") || "Not specified" %>
 
 ## Components
 
 <% it.components.forEach(function(component) { %>
-### <%= component.name %> (<%= component.technologies.join(", ") %>)
+### <%= component.name %>
 
-- **Architecture Overview**: <%= component.architecture %>
-- **Main Responsibilities**: <%= component.responsibilities %>
-- **Implementation Approach**: <%= component.implementation %>
-- **Key Features**:
-  <% component.features.forEach(function(feature) { %>
-  - <%= feature %>
-  <% }) %>
-- **Integration Points**:
-  <% component.integrationPoints.forEach(function(point) { %>
-  - <%= point %>
-  <% }) %>
-- **Technical Considerations**:
-  <% component.considerations.forEach(function(consideration) { %>
-  - <%= consideration %>
-  <% }) %>
+**Technologies**: <%= component.technologies.join(", ") %>
+
+**Architecture**: <%= component.architecture %>
+
+**Responsibilities**: <%= component.responsibilities %>
+
+**Implementation**: <%= component.implementation %>
+
+<% if (component.features && component.features.length > 0) { %>
+#### Features
+<% component.features.forEach(function(feature) { %>
+- <%= feature %>
+<% }) %>
+<% } %>
+
+<% if (component.integrationPoints && component.integrationPoints.length > 0) { %>
+#### Integration Points
+<% component.integrationPoints.forEach(function(point) { %>
+- <%= point %>
+<% }) %>
+<% } %>
+
+<% if (component.considerations && component.considerations.length > 0) { %>
+#### Technical Considerations
+<% component.considerations.forEach(function(consideration) { %>
+- <%= consideration %>
+<% }) %>
+<% } %>
+
 <% }) %>
 
-### Other Considerations
+## Future Development
 
-- **Project Types**: <%= it.type %>
-- **Build Tools**: <%= it.buildTools.join(", ") || "Not specified" %>
-- **Test Frameworks**: <%= it.testFrameworks.join(", ") || "Not specified" %>
-- **Future Expansions**:
-  <% it.futureExpansions.forEach(function(expansion) { %>
-  - <%= expansion %>
-  <% }) %>
-- **Integration Capabilities**:
-  <% it.integrationCapabilities.forEach(function(capability) { %>
-  - <%= capability %>
-  <% }) %> 
+<% if (it.futureExpansions && it.futureExpansions.length > 0) { %>
+### Planned Expansions
+<% it.futureExpansions.forEach(function(expansion) { %>
+- <%= expansion %>
+<% }) %>
+<% } %>
+
+<% if (it.integrationCapabilities && it.integrationCapabilities.length > 0) { %>
+### Integration Capabilities
+<% it.integrationCapabilities.forEach(function(capability) { %>
+- <%= capability %>
+<% }) %>
+<% } %> 

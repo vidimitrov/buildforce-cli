@@ -4,7 +4,7 @@ import { Command } from "commander";
 import { InitCommand } from "./commands/init/index";
 import { PlanCommand } from "./commands/plan/index";
 import { ProjectAnalyzer } from "./analysis/analyzer";
-import { createFileTools } from "./tools/file";
+import { createFileTools, createProjectUtils } from "./tools/file/index";
 import { ChunkManager } from "./analysis/chunk";
 import {
   ProjectAnalyzer as CoreProjectAnalyzer,
@@ -20,6 +20,7 @@ program
 
 // Initialize dependencies
 const fileTools: FileTools = createFileTools(process.cwd());
+const projectUtils = createProjectUtils(process.cwd());
 const chunkManager = new ChunkManager(fileTools);
 const analyzer: CoreProjectAnalyzer = new ProjectAnalyzer(
   chunkManager,
@@ -27,7 +28,7 @@ const analyzer: CoreProjectAnalyzer = new ProjectAnalyzer(
 );
 
 // Initialize commands
-const initCommand = new InitCommand(analyzer, fileTools);
+const initCommand = new InitCommand(analyzer, fileTools, projectUtils);
 initCommand.register(program);
 
 const planCommand = new PlanCommand();

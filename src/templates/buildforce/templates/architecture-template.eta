@@ -6,30 +6,35 @@
 
 ## Tech Stack
 
-<% it.frameworks.forEach(function(framework) { %>
-### <%= framework %> Tech Stack
-
-- **Framework**: <%= framework %>
+### Core Technologies
 - **Runtime**: <%= it.runtime || "Node.js" %>
 - **Language**: <%= it.language || "TypeScript" %>
 - **Testing**: <%= it.testFrameworks.join(", ") || "Not specified" %>
-- **Other Key Technologies**:
-  <% it.dependencies.forEach(function(dep) { %>
-  - <%= dep %>
-  <% }) %>
+
+### Frameworks & Patterns
+<% it.frameworks.forEach(function(framework) { %>
+- <%= framework %>
 <% }) %>
 
-## Build and Dependency Management
-
-The project uses the following build and dependency management tools:
-<% it.buildTools.forEach(function(tool) { %>
-- <%= tool %>
-<% }) %>
-
-Project dependencies are managed through package.json:
+### Dependencies
+<% if (it.dependencies && it.dependencies.length > 0) { %>
 <% it.dependencies.forEach(function(dep) { %>
 - <%= dep %>
 <% }) %>
+<% } else { %>
+No external dependencies specified.
+<% } %>
+
+## Build and Dependency Management
+
+<% if (it.buildTools && it.buildTools.length > 0) { %>
+The project uses the following build tools:
+<% it.buildTools.forEach(function(tool) { %>
+- <%= tool %>
+<% }) %>
+<% } else { %>
+No specific build tools specified.
+<% } %>
 
 ## Project Structure
 

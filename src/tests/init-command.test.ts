@@ -3,6 +3,7 @@ import * as path from "path";
 import * as os from "os";
 import { InitCommand } from "../commands/init/index";
 import { ProjectAnalyzer, FileTools } from "../types/project";
+import { ProjectUtils } from "../tools/file/types";
 import { InitAgent } from "../agents/init";
 import { isBuildforceInitialized } from "../services/filesystem";
 import { promptForOpenRouterConfig, updateEnvFile } from "../services/config";
@@ -19,6 +20,7 @@ describe("InitCommand Integration", () => {
   let testDir: string;
   let mockAnalyzer: jest.Mocked<ProjectAnalyzer>;
   let mockFileTools: jest.Mocked<FileTools>;
+  let mockProjectUtils: jest.Mocked<ProjectUtils>;
   let command: InitCommand;
 
   beforeEach(() => {
@@ -36,6 +38,10 @@ describe("InitCommand Integration", () => {
       mkdir: jest.fn(),
     } as any;
 
+    mockProjectUtils = {
+      listDirectory: jest.fn(),
+    } as any;
+
     (isBuildforceInitialized as jest.Mock).mockReturnValue(false);
     (promptForOpenRouterConfig as jest.Mock).mockResolvedValue({
       apiKey: "test-key",
@@ -45,7 +51,7 @@ describe("InitCommand Integration", () => {
     (copyBuildforceTemplate as jest.Mock).mockResolvedValue(undefined);
     (updateEnvFile as jest.Mock).mockResolvedValue(undefined);
 
-    command = new InitCommand(mockAnalyzer, mockFileTools);
+    command = new InitCommand(mockAnalyzer, mockFileTools, mockProjectUtils);
   });
 
   afterEach(() => {

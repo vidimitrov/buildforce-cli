@@ -1,29 +1,36 @@
 import { Command } from "commander";
-import { commands } from "./commands";
 import { ProjectAnalyzer, FileTools } from "./types/project";
+import { ProjectUtils } from "./tools/file/types";
+import { createFileTools, createProjectUtils } from "./tools/file/index";
+import { ChunkManager } from "./analysis/chunk";
+import { ProjectAnalyzer as CoreProjectAnalyzer } from "./analysis/analyzer";
 
 export class CLI {
-  private program: Command;
+  private analyzer: ProjectAnalyzer;
+  private fileTools: FileTools;
+  private projectUtils: ProjectUtils;
 
-  constructor(private analyzer: ProjectAnalyzer, private fileTools: FileTools) {
-    this.program = new Command();
-    this.setupProgram();
+  constructor() {
+    // Initialize dependencies
+    this.fileTools = createFileTools(process.cwd());
+    this.projectUtils = createProjectUtils(process.cwd());
+    const chunkManager = new ChunkManager(this.fileTools);
+    this.analyzer = new CoreProjectAnalyzer(chunkManager, this.fileTools);
   }
 
-  private setupProgram(): void {
-    this.program
-      .name("buildforce")
-      .description("CLI tool for project documentation and analysis")
-      .version("1.0.0");
-
-    // Register all commands
-    commands.forEach((CommandClass) => {
-      const command = new CommandClass(this.analyzer, this.fileTools);
-      command.register(this.program);
-    });
-  }
-
-  async run(args: string[]): Promise<void> {
-    await this.program.parseAsync(args);
+  async registerCommand(
+    program: Command,
+    CommandClass: new (
+      analyzer: ProjectAnalyzer,
+      fileTools: FileTools,
+      projectUtils: ProjectUtils
+    ) => any
+  ): Promise<void> {
+    const command = new CommandClass(
+      this.analyzer,
+      this.fileTools,
+      this.projectUtils
+    );
+    command.register(program);
   }
 }

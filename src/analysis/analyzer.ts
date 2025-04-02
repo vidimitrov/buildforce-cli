@@ -106,8 +106,23 @@ export class ProjectAnalyzer implements CoreProjectAnalyzer {
     };
 
     const errors: Error[] = [];
-    const files = await this.fileTools.searchFiles("*");
-    console.log("Found files:", files);
+    const allPaths = await this.fileTools.searchFiles("**/*");
+    console.log("Found all paths:", allPaths);
+
+    // Filter out directories and only keep files
+    const files = await Promise.all(
+      allPaths.map(async (path) => {
+        try {
+          const exists = await this.fileTools.exists(path);
+          return exists ? path : null;
+        } catch (error) {
+          console.warn(`Warning: Could not check path ${path}:`, error);
+          return null;
+        }
+      })
+    ).then((paths) => paths.filter((path): path is string => path !== null));
+
+    console.log("Filtered files:", files);
 
     if (files.length === 0) {
       throw new AnalysisSystemError(
@@ -122,10 +137,19 @@ export class ProjectAnalyzer implements CoreProjectAnalyzer {
       files,
       content: await Promise.all(
         files.map(async (file) => {
-          const content = await this.fileTools.readFile(file);
-          return `=== ${file} ===\n${content}\n=== end ${file} ===`;
+          try {
+            const content = await this.fileTools.readFile(file);
+            return `=== ${file} ===\n${content}\n=== end ${file} ===`;
+          } catch (error) {
+            console.warn(`Warning: Could not read file ${file}:`, error);
+            return null;
+          }
         })
-      ).then((contents) => contents.join("\n")),
+      ).then((contents) =>
+        contents
+          .filter((content): content is string => content !== null)
+          .join("\n")
+      ),
       dependencies: [], // We'll extract dependencies during analysis
       relevance: 1.0, // Main chunk has highest relevance
     };

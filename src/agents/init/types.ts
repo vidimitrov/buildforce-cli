@@ -1,4 +1,5 @@
 import { ProjectAnalyzer, FileTools } from "../../types/project";
+import { ProjectUtils } from "../../tools/file/types";
 
 export interface InitAgentConfig {
   projectName: string;
@@ -7,7 +8,14 @@ export interface InitAgentConfig {
     skipAnalysis?: boolean;
     force?: boolean;
     verbose?: boolean;
+    devMode?: boolean;
   };
+}
+
+export interface InitAgentDependencies {
+  analyzer: ProjectAnalyzer;
+  fileTools: FileTools;
+  projectUtils: ProjectUtils;
 }
 
 export interface InitAgentResult {
@@ -18,9 +26,4 @@ export interface InitAgentResult {
   };
   warnings: string[];
   errors: string[];
-}
-
-export interface InitAgentDependencies {
-  analyzer: ProjectAnalyzer;
-  fileTools: FileTools;
 }
