@@ -6,7 +6,7 @@
 
 ## Overview
 
-<%= it.description || "A project that needs to be analyzed and documented." %>
+<%= it.description || "" %>
 
 ## Project Type
 - **Type**: <%= it.type %>

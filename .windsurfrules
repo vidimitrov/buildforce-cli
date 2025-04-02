@@ -227,3 +227,24 @@ Strictly follow the rules in [rules.md](./buildforce/rules.md)
 - Avoid having huge files over 300-400 lines of code - break it up when this occurs
 - Be careful with .env files, especially when updating or creating them
 - Always think about what other methods and areas of code might be affected by code changes
+
+
+# Buildforce rules
+
+Strictly follow the rules in [rules.md](./buildforce/rules.md)
+
+# Code implementation rules
+
+- Avoid implementing redundant code - search for existing implementations and reuse if possible
+- When implementing code that potentially could be reused wrap it in a util, function or hook and use it from there
+- Once you have a solution implemented, do not suggest another before the user tested and validated the initial one
+- Prefer simple solutions
+- Avoid custom implementations and rewriting of existing functionalities unless all other solutions fail
+- Search online if you are not sure about something - prefer Stackoverflow and Github Issues
+- Always stick to the tech stack used in the app, do not suggest new libraries if something could be achieved with the current frameworks/libs
+- Keep the code clean and well-organised
+- Always make sure that the file compiles properly - TypeScript
+- Always make sure that the file lints properly and follows ESLint rules
+- Avoid having huge files over 300-400 lines of code - break it up when this occurs
+- Be careful with .env files, especially when updating or creating them
+- Always think about what other methods and areas of code might be affected by code changes

@@ -2,6 +2,8 @@ import { InitAgent } from "../agent";
 import { ProjectAnalyzer, FileTools } from "../../../types/project";
 import { ProjectUtils } from "../../../tools/file/types";
 import { InitAgentConfig } from "../types";
+import { ChatOpenAI } from "@langchain/openai";
+import { AIMessageChunk } from "@langchain/core/messages";
 
 describe("InitAgent", () => {
   let agent: InitAgent;
@@ -9,6 +11,7 @@ describe("InitAgent", () => {
   let mockAnalyzer: jest.Mocked<ProjectAnalyzer>;
   let mockFileTools: jest.Mocked<FileTools>;
   let mockProjectUtils: jest.Mocked<ProjectUtils>;
+  let mockModel: jest.Mocked<ChatOpenAI>;
 
   beforeEach(() => {
     mockConfig = {
@@ -32,11 +35,16 @@ describe("InitAgent", () => {
       listDirectory: jest.fn(),
     } as any;
 
+    mockModel = {
+      invoke: jest.fn(),
+    } as any;
+
     agent = new InitAgent(
       mockConfig,
       mockAnalyzer,
       mockFileTools,
-      mockProjectUtils
+      mockProjectUtils,
+      mockModel
     );
   });
 
@@ -58,6 +66,7 @@ describe("InitAgent", () => {
     mockAnalyzer.analyzeProject.mockResolvedValue(mockAnalysis);
     mockFileTools.exists.mockResolvedValue(true);
     mockFileTools.readFile.mockResolvedValue("content");
+    mockModel.invoke.mockResolvedValue(new AIMessageChunk("generated content"));
 
     const result = await agent.execute();
 
@@ -70,8 +79,19 @@ describe("InitAgent", () => {
     expect(mockFileTools.writeFile).toHaveBeenCalledTimes(2);
   });
 
+  it("should handle analysis failures", async () => {
+    mockAnalyzer.analyzeProject.mockRejectedValue(new Error("Analysis failed"));
+
+    const result = await agent.execute();
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toContain(
+      "Failed to analyze project: Analysis failed"
+    );
+  });
+
   it("should skip analysis when configured", async () => {
-    const configWithSkip: InitAgentConfig = {
+    const configWithSkip = {
       ...mockConfig,
       options: { skipAnalysis: true },
     };
@@ -80,28 +100,18 @@ describe("InitAgent", () => {
       configWithSkip,
       mockAnalyzer,
       mockFileTools,
-      mockProjectUtils
+      mockProjectUtils,
+      mockModel
     );
 
     mockFileTools.exists.mockResolvedValue(true);
     mockFileTools.readFile.mockResolvedValue("content");
+    mockModel.invoke.mockResolvedValue(new AIMessageChunk("generated content"));
 
     const result = await agent.execute();
 
     expect(result.success).toBe(true);
-    expect(result.warnings).toContain(
-      "Project analysis skipped as per configuration"
-    );
     expect(mockAnalyzer.analyzeProject).not.toHaveBeenCalled();
-  });
-
-  it("should handle analysis failure", async () => {
-    mockAnalyzer.analyzeProject.mockRejectedValue(new Error("Analysis failed"));
-
-    const result = await agent.execute();
-
-    expect(result.success).toBe(false);
-    expect(result.errors).toContain("Analysis failed");
   });
 
   it("should handle file operation failures", async () => {

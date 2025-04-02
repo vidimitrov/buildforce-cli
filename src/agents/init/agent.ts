@@ -11,19 +11,26 @@ import {
 } from "../../types/templates";
 import { ProjectAnalyzer, FileTools } from "../../types/project";
 import { ProjectUtils } from "../../tools/file/types";
+import { ChatOpenAI } from "@langchain/openai";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 
 export class InitAgent {
   private warnings: string[] = [];
   private errors: string[] = [];
   private eta: Eta;
+  private model: ChatOpenAI;
 
   constructor(
     private config: InitAgentConfig,
     private analyzer: ProjectAnalyzer,
     private fileTools: FileTools,
-    private projectUtils: ProjectUtils
+    private projectUtils: ProjectUtils,
+    model: ChatOpenAI
   ) {
     this.eta = new Eta();
+    this.model = model;
   }
 
   private log(message: string, data?: any) {
@@ -33,6 +40,68 @@ export class InitAgent {
         data ? JSON.stringify(data, null, 2) : ""
       );
     }
+  }
+
+  private async generateWithLLM(
+    prompt: string,
+    context: any,
+    maxRetries = 3
+  ): Promise<string> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        this.log(`LLM attempt ${attempt}/${maxRetries}`);
+
+        const systemPrompt = `You are a documentation generation assistant. Your task is to generate high-quality documentation based on the provided context and template. Follow these guidelines:
+
+1. Maintain a professional and technical tone
+2. Be specific and detailed
+3. Use proper markdown formatting
+4. Include all relevant information from the context
+5. Follow the template structure exactly
+6. Ensure consistency in terminology
+7. Add appropriate sections and subsections
+8. Include code examples where relevant
+9. Add proper links and references
+10. Maintain a clear and logical flow
+
+Context:
+${JSON.stringify(context, null, 2)}
+
+Template:
+${prompt}`;
+
+        const chatPrompt = ChatPromptTemplate.fromMessages([
+          new SystemMessage(systemPrompt),
+          new HumanMessage(
+            "Generate the documentation following the template and guidelines."
+          ),
+        ]);
+
+        const parser = new StringOutputParser();
+        const chain = chatPrompt.pipe(this.model).pipe(parser);
+
+        const result = await chain.invoke("Generate the documentation.");
+        this.log("LLM generation successful");
+        return result;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        this.log(`LLM attempt ${attempt} failed`, { error: lastError.message });
+
+        if (attempt < maxRetries) {
+          // Wait before retrying (exponential backoff)
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.pow(2, attempt) * 1000)
+          );
+        }
+      }
+    }
+
+    throw (
+      lastError ||
+      new Error("Failed to generate documentation after all retries")
+    );
   }
 
   async execute(): Promise<InitAgentResult> {
@@ -225,9 +294,9 @@ export class InitAgent {
       );
       this.log("Template loaded successfully");
 
-      this.log("Rendering architecture documentation");
-      const result = this.eta.renderString(template, templateData);
-      this.log("Architecture documentation rendered successfully");
+      this.log("Generating architecture documentation with LLM");
+      const result = await this.generateWithLLM(template, templateData);
+      this.log("Architecture documentation generated successfully");
       return result;
     } catch (error) {
       this.log("Architecture documentation generation failed", {
@@ -297,9 +366,9 @@ export class InitAgent {
       );
       this.log("Template loaded successfully");
 
-      this.log("Rendering specification documentation");
-      const result = this.eta.renderString(template, templateData);
-      this.log("Specification documentation rendered successfully");
+      this.log("Generating specification documentation with LLM");
+      const result = await this.generateWithLLM(template, templateData);
+      this.log("Specification documentation generated successfully");
       return result;
     } catch (error) {
       this.log("Specification documentation generation failed", {

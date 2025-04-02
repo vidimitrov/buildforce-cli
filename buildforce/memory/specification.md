@@ -54,6 +54,30 @@ The automatic onboarding system is a key component that streamlines project init
 
 The system is designed to reduce manual effort in project setup while ensuring high-quality documentation output.
 
+## LLM-Based Documentation Generation
+
+The system provides automatic documentation generation during project initialization using LLM technology. Key features include:
+
+1. Core Functionality:
+
+   - Automatic analysis of project structure
+   - Generation of architecture and specification docs
+   - Integration with existing templates
+   - Quality validation and formatting
+
+2. User Experience:
+
+   - Progress reporting during generation
+   - Clear error messages and recovery
+   - Configurable through environment variables
+   - Extensible for future improvements
+
+3. Quality Assurance:
+   - Basic validation of generated content
+   - Error handling and retries
+   - Logging for debugging
+   - Future plans for advanced analysis
+
 ## Considerations
 
 ### Technical Requirements

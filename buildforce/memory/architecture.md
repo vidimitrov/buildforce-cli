@@ -105,3 +105,25 @@ The system is designed to be modular and extensible, with proper error handling 
 - Test utilities for temporary directory management
 - Individual test commands for specific features
 - Automated verification of command behavior
+
+## LLM-Based Documentation Generation
+
+The system uses LLM technology to generate high-quality documentation during project initialization. Key components include:
+
+1. LLM Service Integration:
+
+   - Reuses existing LangChain and OpenRouter setup
+   - Implements proper error handling and retries
+   - Provides progress reporting and logging
+
+2. Documentation Generation:
+
+   - Combines project analysis with Eta templates
+   - Uses system prompts for quality control
+   - Implements basic validation and formatting
+
+3. Future Improvements:
+   - Advanced repo analysis techniques
+   - Enhanced prompt engineering
+   - More comprehensive validation
+   - Better error recovery

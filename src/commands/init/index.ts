@@ -9,6 +9,7 @@ import {
 import { isBuildforceInitialized } from "../../services/filesystem";
 import { ProjectAnalyzer, FileTools } from "../../types/project";
 import { ProjectUtils } from "../../tools/file/types";
+import { initializeModel } from "../../services/model";
 
 export class InitCommand {
   constructor(
@@ -19,13 +20,12 @@ export class InitCommand {
 
   register(program: Command): void {
     program
-      .command("init")
-      .description("Initialize project documentation")
-      .argument("[projectName]", "Name of the project")
-      .option("-s, --skip-analysis", "Skip project analysis")
-      .option("-f, --force", "Force overwrite existing documentation")
-      .option("-v, --verbose", "Enable verbose output")
-      .option("--dev-mode", "Enable development mode with detailed logging")
+      .command("init <projectName>")
+      .description("Initialize a new project with Buildforce")
+      .option("--skip-analysis", "Skip project analysis")
+      .option("--force", "Force initialization even if already initialized")
+      .option("--verbose", "Enable verbose output")
+      .option("--dev-mode", "Enable development mode")
       .action(async (projectName: string, options: Record<string, boolean>) => {
         await this.execute(projectName, options);
       });
@@ -60,6 +60,12 @@ export class InitCommand {
         configUpdated = true;
       }
 
+      // Initialize the LLM model
+      const model = initializeModel({
+        apiKey: config.apiKey,
+        model: config.model,
+      });
+
       // Initialize the agent with configuration
       const agentConfig: InitAgentConfig = {
         projectName: projectName || process.cwd().split("/").pop() || "unknown",
@@ -76,29 +82,27 @@ export class InitCommand {
         agentConfig,
         this.analyzer,
         this.fileTools,
-        this.projectUtils
+        this.projectUtils,
+        model
       );
 
       // Execute the agent
       const result = await agent.execute();
 
       if (result.success) {
-        console.log("Project initialized successfully");
+        console.log("\nProject initialized successfully!");
         if (result.warnings.length > 0) {
           console.log("\nWarnings:");
-          result.warnings.forEach((warning) => console.log(`  - ${warning}`));
+          result.warnings.forEach((warning) => console.log(`- ${warning}`));
         }
       } else {
-        console.error("Failed to initialize project");
-        if (result.errors.length > 0) {
-          console.error("\nErrors:");
-          result.errors.forEach((error) => console.error(`  - ${error}`));
-        }
-        throw new Error("Failed to initialize project");
+        console.error("\nFailed to initialize project:");
+        result.errors.forEach((error) => console.error(`- ${error}`));
+        process.exit(1);
       }
     } catch (error) {
-      console.error("❌ An unexpected error occurred:", error);
-      throw error;
+      console.error("Failed to initialize project:", error);
+      process.exit(1);
     }
   }
 }

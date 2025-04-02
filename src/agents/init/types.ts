@@ -1,5 +1,6 @@
 import { ProjectAnalyzer, FileTools } from "../../types/project";
 import { ProjectUtils } from "../../tools/file/types";
+import { ChatOpenAI } from "@langchain/openai";
 
 export interface InitAgentConfig {
   projectName: string;
@@ -16,6 +17,7 @@ export interface InitAgentDependencies {
   analyzer: ProjectAnalyzer;
   fileTools: FileTools;
   projectUtils: ProjectUtils;
+  model: ChatOpenAI;
 }
 
 export interface InitAgentResult {

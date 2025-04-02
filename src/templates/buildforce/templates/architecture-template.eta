@@ -2,13 +2,13 @@
 
 ## Overview
 
-<%= it.description || "A project that needs to be analyzed and documented." %>
+<%= it.description || "" %>
 
 ## Tech Stack
 
 ### Core Technologies
-- **Runtime**: <%= it.runtime || "Node.js" %>
-- **Language**: <%= it.language || "TypeScript" %>
+- **Runtime**: <%= it.runtime || "" %>
+- **Language**: <%= it.language || "" %>
 - **Testing**: <%= it.testFrameworks.join(", ") || "Not specified" %>
 
 ### Frameworks & Patterns
@@ -38,7 +38,7 @@ No specific build tools specified.
 
 ## Project Structure
 
-The project follows a standard Node.js/TypeScript structure:
+The project follows the following structure:
 <% it.structure.directories.forEach(function(dir) { %>
 - <%= dir %>
 <% }) %> 
