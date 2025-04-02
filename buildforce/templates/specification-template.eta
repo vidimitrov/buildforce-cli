@@ -1,0 +1,45 @@
+# Project Specification
+
+## Project Name
+
+<%= it.name %>
+
+## Goal
+
+<%= it.description || "A project that needs to be analyzed and documented." %>
+
+## Components
+
+<% it.components.forEach(function(component) { %>
+### <%= component.name %> (<%= component.technologies.join(", ") %>)
+
+- **Architecture Overview**: <%= component.architecture %>
+- **Main Responsibilities**: <%= component.responsibilities %>
+- **Implementation Approach**: <%= component.implementation %>
+- **Key Features**:
+  <% component.features.forEach(function(feature) { %>
+  - <%= feature %>
+  <% }) %>
+- **Integration Points**:
+  <% component.integrationPoints.forEach(function(point) { %>
+  - <%= point %>
+  <% }) %>
+- **Technical Considerations**:
+  <% component.considerations.forEach(function(consideration) { %>
+  - <%= consideration %>
+  <% }) %>
+<% }) %>
+
+### Other Considerations
+
+- **Project Types**: <%= it.type %>
+- **Build Tools**: <%= it.buildTools.join(", ") || "Not specified" %>
+- **Test Frameworks**: <%= it.testFrameworks.join(", ") || "Not specified" %>
+- **Future Expansions**:
+  <% it.futureExpansions.forEach(function(expansion) { %>
+  - <%= expansion %>
+  <% }) %>
+- **Integration Capabilities**:
+  <% it.integrationCapabilities.forEach(function(capability) { %>
+  - <%= capability %>
+  <% }) %> 
