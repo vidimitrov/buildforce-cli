@@ -6,32 +6,32 @@ Implement file operation tools (read/write/search) following the same pattern as
 
 ## Sub-Tasks
 
-- [ ] Create Read File Tool
+- [x] Create Read File Tool
 
-  - [ ] Define tool schema with Zod
-  - [ ] Implement file reading logic
-  - [ ] Add error handling
-  - [ ] Add proper documentation
+  - [x] Define tool schema with Zod
+  - [x] Implement file reading logic
+  - [x] Add error handling
+  - [x] Add proper documentation
 
-- [ ] Create Write File Tool
+- [x] Create Write File Tool
 
-  - [ ] Define tool schema with Zod
-  - [ ] Implement file writing logic
-  - [ ] Add error handling
-  - [ ] Add proper documentation
+  - [x] Define tool schema with Zod
+  - [x] Implement file writing logic
+  - [x] Add error handling
+  - [x] Add proper documentation
 
-- [ ] Create Search Files Tool
+- [x] Create Search Files Tool
 
-  - [ ] Define tool schema with Zod
-  - [ ] Implement file searching logic
-  - [ ] Add error handling
-  - [ ] Add proper documentation
+  - [x] Define tool schema with Zod
+  - [x] Implement file searching logic
+  - [x] Add error handling
+  - [x] Add proper documentation
 
-- [ ] Testing
-  - [ ] Create test utilities
-  - [ ] Add unit tests for each tool
-  - [ ] Add integration tests
-  - [ ] Test error scenarios
+- [x] Testing
+  - [x] Create test utilities
+  - [x] Add unit tests for each tool
+  - [x] Add integration tests
+  - [x] Test error scenarios
 
 ## Implementation Plan
 
@@ -46,9 +46,18 @@ import { readFile } from "../../services/filesystem";
 export const readFileTool = tool(
   async ({ path }) => {
     try {
-      return await readFile(path);
+      const content = await readFile(path);
+      return { success: true, content };
     } catch (error) {
-      throw new Error(`Failed to read file: ${error.message}`);
+      if (error instanceof FileOperationError) {
+        return { success: false, error: error.message };
+      }
+      return {
+        success: false,
+        error: `Failed to read file: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      };
     }
   },
   {
@@ -73,9 +82,17 @@ export const writeFileTool = tool(
   async ({ path, content }) => {
     try {
       await writeFile(path, content);
-      return "File written successfully";
+      return { success: true, message: "File written successfully" };
     } catch (error) {
-      throw new Error(`Failed to write file: ${error.message}`);
+      if (error instanceof FileOperationError) {
+        return { success: false, error: error.message };
+      }
+      return {
+        success: false,
+        error: `Failed to write file: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      };
     }
   },
   {
@@ -100,9 +117,18 @@ import { searchFiles } from "../../services/filesystem";
 export const searchFilesTool = tool(
   async ({ pattern }) => {
     try {
-      return await searchFiles(pattern);
+      const files = await searchFiles(pattern);
+      return { success: true, files };
     } catch (error) {
-      throw new Error(`Failed to search files: ${error.message}`);
+      if (error instanceof FileOperationError) {
+        return { success: false, error: error.message };
+      }
+      return {
+        success: false,
+        error: `Failed to search files: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      };
     }
   },
   {
@@ -137,7 +163,7 @@ describe("File Tools", () => {
       (readFile as jest.Mock).mockResolvedValue(mockContent);
 
       const result = await readFileTool.call({ path: "test.txt" });
-      expect(result).toBe(mockContent);
+      expect(result).toEqual({ success: true, content: mockContent });
       expect(readFile).toHaveBeenCalledWith("test.txt");
     });
 
@@ -145,9 +171,11 @@ describe("File Tools", () => {
       const error = new Error("File not found");
       (readFile as jest.Mock).mockRejectedValue(error);
 
-      await expect(readFileTool.call({ path: "test.txt" })).rejects.toThrow(
-        "Failed to read file: File not found"
-      );
+      const result = await readFileTool.call({ path: "test.txt" });
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to read file: File not found",
+      });
     });
   });
 
@@ -160,7 +188,10 @@ describe("File Tools", () => {
         content: "test content",
       });
 
-      expect(result).toBe("File written successfully");
+      expect(result).toEqual({
+        success: true,
+        message: "File written successfully",
+      });
       expect(writeFile).toHaveBeenCalledWith("test.txt", "test content");
     });
 
@@ -168,12 +199,14 @@ describe("File Tools", () => {
       const error = new Error("Permission denied");
       (writeFile as jest.Mock).mockRejectedValue(error);
 
-      await expect(
-        writeFileTool.call({
-          path: "test.txt",
-          content: "test content",
-        })
-      ).rejects.toThrow("Failed to write file: Permission denied");
+      const result = await writeFileTool.call({
+        path: "test.txt",
+        content: "test content",
+      });
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to write file: Permission denied",
+      });
     });
   });
 
@@ -183,7 +216,7 @@ describe("File Tools", () => {
       (searchFiles as jest.Mock).mockResolvedValue(mockFiles);
 
       const result = await searchFilesTool.call({ pattern: "*.txt" });
-      expect(result).toEqual(mockFiles);
+      expect(result).toEqual({ success: true, files: mockFiles });
       expect(searchFiles).toHaveBeenCalledWith("*.txt");
     });
 
@@ -191,9 +224,11 @@ describe("File Tools", () => {
       const error = new Error("Invalid pattern");
       (searchFiles as jest.Mock).mockRejectedValue(error);
 
-      await expect(searchFilesTool.call({ pattern: "*.txt" })).rejects.toThrow(
-        "Failed to search files: Invalid pattern"
-      );
+      const result = await searchFilesTool.call({ pattern: "*.txt" });
+      expect(result).toEqual({
+        success: false,
+        error: "Failed to search files: Invalid pattern",
+      });
     });
   });
 });
@@ -212,3 +247,40 @@ describe("File Tools", () => {
 - Maintain good error messages
 - Consider future extensibility
 - Document all changes
+
+## Recap
+
+### Completed Implementation
+
+1. **Core File Tools**
+
+   - Implemented readFile, writeFile, and searchFiles tools
+   - Added proper error handling with structured responses
+   - Integrated with existing FileToolsImpl
+   - Fixed recursion limit issues
+
+2. **Testing**
+   - Created comprehensive unit tests
+   - Added error handling tests
+   - Verified tool functionality
+   - Tested integration with FileToolsImpl
+
+### Key Decisions
+
+1. **Structured Responses**
+
+   - All tools return { success: boolean, ... } format
+   - Consistent error handling across tools
+   - Clear success/error indicators
+
+2. **Error Handling**
+   - Proper error propagation
+   - User-friendly error messages
+   - Type-safe error handling
+
+### Next Steps
+
+- Monitor tool usage in production
+- Gather feedback on error messages
+- Consider additional tool enhancements
+- Update documentation as needed

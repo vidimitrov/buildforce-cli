@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import * as readline from "readline";
 import { createNewSession, getNextSessionNumber } from "../../services/session";
-import { initializeModel } from "../../services/model";
+import { getModelConfigWithOverrides } from "../../services/model";
 import { isBuildforceInitialized } from "../../services/filesystem";
 import { startPlanningConversation, chat } from "../../agents/planning";
 
@@ -39,7 +39,7 @@ export class PlanCommand {
       createNewSession();
 
       // Initialize model with potential overrides
-      const modelInstance = initializeModel({
+      const modelConfig = getModelConfigWithOverrides({
         apiKey: options.apiKey,
         model: options.model,
       });
@@ -58,7 +58,7 @@ export class PlanCommand {
       const sessionId = getNextSessionNumber();
 
       // Initial welcome message
-      const welcome = await startPlanningConversation(sessionId);
+      const welcome = await startPlanningConversation(sessionId, modelConfig);
       console.log(`\nBuildforce: ${welcome}\n`);
 
       while (conversationActive) {
@@ -81,7 +81,7 @@ export class PlanCommand {
           console.log("\nEnding conversation...\n");
         } else {
           console.log("\nThinking...");
-          const answer = await chat(userInput, sessionId);
+          const answer = await chat(userInput, sessionId, modelConfig);
           console.log(`\nBuildforce: ${answer}\n`);
         }
       }

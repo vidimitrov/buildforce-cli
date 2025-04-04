@@ -22,6 +22,7 @@ The Buildforce CLI aims to provide a command-line interface for accessing and ut
    - AI tools rule file management (Cursor, Cline, Windsurf)
    - Session-based chat history tracking
    - Project memory integration
+   - Autonomous planning agent with file operation capabilities
 
 3. **Configuration Management**
    - Environment variable handling with validation
@@ -30,6 +31,32 @@ The Buildforce CLI aims to provide a command-line interface for accessing and ut
    - Template management
    - AI tools rule file setup and configuration
    - Session state management
+
+### Autonomous Planning Agent
+
+The autonomous planning agent is a key component that enables independent session management:
+
+1. **Agent Capabilities**:
+
+   - Autonomous decision making using LangGraph
+   - File operation tools for reading, writing, and searching
+   - Context-aware system prompts with project memory
+   - Structured response handling to prevent recursion
+
+2. **File Operations**:
+
+   - Reading file contents with error handling
+   - Writing content to files with validation
+   - Searching for files matching patterns
+   - Maintaining clean code structure
+
+3. **User Experience**:
+   - Seamless integration with planning command
+   - Clear error messages and recovery
+   - Autonomous session file management
+   - Consistent behavior across operations
+
+The agent is designed to reduce manual effort in session management while ensuring high-quality output.
 
 ### Automatic Onboarding System
 

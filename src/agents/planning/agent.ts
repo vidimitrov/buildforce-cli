@@ -8,7 +8,8 @@ import {
 } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { readContextFile } from "../../services/filesystem";
-import { exampleTool } from "./tools";
+import { readFileTool, writeFileTool, searchFilesTool } from "./tools";
+import { initializeModel } from "../../services/model";
 
 /**
  * Builds the system prompt with project context and current session history
@@ -32,7 +33,19 @@ ${specification}
 
 Your goal is to brainstorm with the user about the session they are about to start, and once all the needed information is in place, to construct a detailed plan and create the needed session files as described in the Buildforce rules. Be friendly and engaging, and refer back to previous messages in the conversation to maintain context.
 
-When starting a new conversation, ask the user what they are planning to work on next in a friendly and engaging way.`;
+When starting a new conversation, ask the user what they are planning to work on next in a friendly and engaging way.
+
+You have access to the following tools:
+- readFile: Read the contents of a file
+- writeFile: Write content to a file
+- searchFiles: Search for files matching a pattern
+
+Use these tools to help you understand the project structure and create session files as needed. For example:
+1. Use searchFiles to find the next available session number in buildforce/sessions/planned
+2. Use readFile to read the session template from buildforce/templates/session-template.md
+3. Use writeFile to create the new session files in the correct structure
+
+Remember to follow the Buildforce rules for file organization and naming conventions.`;
 };
 
 // Define the graph state
@@ -42,18 +55,8 @@ const StateAnnotation = Annotation.Root({
   }),
 });
 
-const tools = [exampleTool];
+const tools = [readFileTool, writeFileTool, searchFilesTool];
 const toolNode = new ToolNode(tools);
-
-// Initialize the LLM
-const model = new ChatOpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  model: "anthropic/claude-3.7-sonnet",
-  temperature: 0,
-  configuration: {
-    baseURL: "https://openrouter.ai/api/v1",
-  },
-}).bindTools(tools);
 
 // Define the function that determines whether to continue or not
 function shouldContinue(state: typeof StateAnnotation.State) {
@@ -69,12 +72,17 @@ function shouldContinue(state: typeof StateAnnotation.State) {
 }
 
 // Define the function that calls the model
-async function callModel(state: typeof StateAnnotation.State) {
+async function callModel(state: typeof StateAnnotation.State, config: any) {
   const messages = [
     { role: "system", content: buildSystemPrompt() },
     ...state.messages,
   ];
-  const response = await model.invoke(messages);
+
+  // Use the model config from the configurable options if provided
+  const modelConfig = config?.configurable?.modelConfig;
+  const llm = initializeModel(modelConfig).bindTools(tools);
+
+  const response = await llm.invoke(messages);
 
   // We return a list, because this will get added to the existing list
   return { messages: [response] };

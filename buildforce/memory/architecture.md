@@ -10,6 +10,7 @@ Buildforce CLI is a command-line interface tool designed to provide access to Bu
 - **Runtime Environment**: Node.js
 - **Key Libraries**:
   - @langchain/core & @langchain/openai: AI/LLM integration
+  - @langchain/langgraph: Workflow management for autonomous agents
   - commander: CLI framework
   - dotenv: Environment configuration
   - inquirer: Interactive command-line prompts
@@ -20,6 +21,18 @@ Buildforce CLI is a command-line interface tool designed to provide access to Bu
 buildforce-cli/
 ├── src/                    # Source code directory
 │   ├── index.ts           # Main entry point
+│   ├── agents/            # AI agents
+│   │   ├── planning/      # Planning agent implementation
+│   │   │   ├── agent.ts   # Agent definition and workflow
+│   │   │   ├── tools.ts   # Agent tools
+│   │   │   └── index.ts   # Agent exports
+│   │   └── ...            # Other agents
+│   ├── tools/             # Tool implementations
+│   │   ├── file/          # File operation tools
+│   │   │   ├── index.ts   # Tool exports
+│   │   │   ├── types.ts   # Tool types
+│   │   │   └── errors.ts  # Error definitions
+│   │   └── ...            # Other tools
 │   └── templates/         # Template files
 │       ├── buildforce/    # Buildforce template files
 │       └── rules/         # AI tools rule templates
@@ -30,6 +43,31 @@ buildforce-cli/
 ├── buildforce/          # Project documentation and rules
 └── configuration files   # Various config files (package.json, tsconfig.json, etc.)
 ```
+
+### Autonomous Planning Agent
+
+The project includes an autonomous planning agent that can independently create and manage session files:
+
+1. **Planning Agent**: A LangGraph-based agent that:
+
+   - Uses a state graph for workflow management
+   - Integrates with file operation tools
+   - Maintains conversation context
+   - Makes autonomous decisions
+
+2. **File Operation Tools**:
+
+   - readFile: Reads file contents with error handling
+   - writeFile: Writes content to files with error handling
+   - searchFiles: Searches for files matching patterns
+
+3. **Workflow Design**:
+   - Uses LangGraph for state management
+   - Implements proper error handling
+   - Returns structured responses to prevent recursion
+   - Maintains clean code structure
+
+The agent is designed to be autonomous, with proper error handling and comprehensive test coverage.
 
 ### Automatic Onboarding System
 
@@ -89,6 +127,7 @@ The system is designed to be modular and extensible, with proper error handling 
   - Supports temporary model/key overrides via command options
   - Automatic session management with chat history
   - Context-aware system prompts with project memory
+  - Autonomous planning agent with file operation capabilities
 
 ## Model Configuration
 
